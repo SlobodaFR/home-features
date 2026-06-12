@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
-import { HomePage } from './pages/HomePage';
+import { AppDetailPage } from './pages/AppDetailPage';
+import { AppsPage } from './pages/AppsPage';
 import { LoginPage } from './pages/LoginPage';
 import { RequireAuth } from './auth/RequireAuth';
 
@@ -11,7 +12,15 @@ export default function App() {
         path="/"
         element={
           <RequireAuth>
-            <HomePage />
+            <AppsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/apps/:appId"
+        element={
+          <RequireAuth>
+            <AppDetailPage />
           </RequireAuth>
         }
       />

@@ -4,6 +4,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
 import { AuthModule } from './interfaces/http/modules/auth.module';
+import { FeatureFlagModule } from './interfaces/http/modules/feature-flag.module';
 import { MeModule } from './interfaces/http/modules/me.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { MeModule } from './interfaces/http/modules/me.module';
     }),
     AuthModule,
     MeModule,
+    FeatureFlagModule,
   ],
 })
 export class AppModule {}
