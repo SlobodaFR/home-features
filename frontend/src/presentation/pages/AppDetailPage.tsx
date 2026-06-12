@@ -1,6 +1,8 @@
 import { FormEvent, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useApiKeys } from '../../application/use-api-keys';
 import { useAppOverview } from '../../application/use-app-overview';
+import { ApiKeyWithSecret } from '../../domain/api-key';
 import { ConfigValueType } from '../../domain/config-entry';
 import { slugify } from '../../domain/slugify';
 import { apiClient } from '../../infrastructure/api-client';
@@ -8,6 +10,7 @@ import { apiClient } from '../../infrastructure/api-client';
 export function AppDetailPage() {
   const { appId } = useParams<{ appId: string }>();
   const { loading, error, overview, refresh } = useAppOverview(appId ?? '');
+  const apiKeys = useApiKeys(appId ?? '');
 
   const [envName, setEnvName] = useState('');
   const [envSlug, setEnvSlug] = useState('');
@@ -18,6 +21,9 @@ export function AppDetailPage() {
   const [configKey, setConfigKey] = useState('');
   const [configName, setConfigName] = useState('');
   const [configType, setConfigType] = useState<ConfigValueType>(ConfigValueType.STRING);
+
+  const [apiKeyName, setApiKeyName] = useState('');
+  const [createdApiKey, setCreatedApiKey] = useState<ApiKeyWithSecret | null>(null);
 
   if (!appId) {
     return <p className="text-error px-margin-mobile py-section">Missing app id.</p>;
@@ -97,6 +103,29 @@ export function AppDetailPage() {
       await refresh();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : 'Failed to set value');
+    }
+  }
+
+  async function handleCreateApiKey(event: FormEvent) {
+    event.preventDefault();
+    const created = await apiKeys.createApiKey(apiKeyName);
+    setCreatedApiKey(created);
+    setApiKeyName('');
+  }
+
+  async function handleDeleteApiKey(id: string, name: string) {
+    if (!window.confirm(`Revoke API key "${name}"? Apps using it will lose access.`)) return;
+    await apiKeys.deleteApiKey(id);
+    if (createdApiKey?.id === id) {
+      setCreatedApiKey(null);
+    }
+  }
+
+  async function handleCopyApiKey(key: string) {
+    try {
+      await navigator.clipboard.writeText(key);
+    } catch {
+      // Clipboard API unavailable - the user can still select and copy manually.
     }
   }
 
@@ -291,6 +320,87 @@ export function AppDetailPage() {
           </select>
           <button type="submit" className="bg-ink text-surface px-xl py-md rounded-full font-button-md">
             Add config
+          </button>
+        </form>
+      </section>
+
+      <section className="mb-xl">
+        <h2 className="font-heading-md text-heading-md text-ink mb-md">API keys</h2>
+        <p className="font-body-sm text-body-sm text-mute mb-md">
+          Use an API key to fetch this app's flags and configs from other services via{' '}
+          <code>GET /api/v1/flags-and-configs?environment=&lt;slug&gt;</code> with an{' '}
+          <code>Authorization: Bearer &lt;key&gt;</code> header.
+        </p>
+
+        {createdApiKey && (
+          <div className="border border-hairline rounded px-md py-md mb-md bg-surface">
+            <p className="font-body-sm text-body-sm text-ink mb-sm">
+              New key <strong>{createdApiKey.name}</strong> created. Copy it now - it won't be shown again.
+            </p>
+            <div className="flex gap-sm items-center">
+              <code className="font-body-sm text-body-sm break-all border border-hairline rounded px-sm py-xs flex-1">
+                {createdApiKey.key}
+              </code>
+              <button
+                type="button"
+                onClick={() => void handleCopyApiKey(createdApiKey.key)}
+                className="bg-ink text-surface px-md py-sm rounded-full font-button-md"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        )}
+
+        {apiKeys.error && <p className="text-error mb-md">Error: {apiKeys.error}</p>}
+
+        {apiKeys.apiKeys.length === 0 ? (
+          <p className="text-mute mb-md">No API keys yet.</p>
+        ) : (
+          <table className="w-full border-collapse mb-md">
+            <thead>
+              <tr>
+                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm">Name</th>
+                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">Created</th>
+                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">Last used</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {apiKeys.apiKeys.map((apiKey) => (
+                <tr key={apiKey.id} className="border-t border-hairline">
+                  <td className="py-sm font-body-md text-body-md text-ink">{apiKey.name}</td>
+                  <td className="py-sm px-md font-body-sm text-body-sm text-mute">
+                    {new Date(apiKey.createdAt).toLocaleString()}
+                  </td>
+                  <td className="py-sm px-md font-body-sm text-body-sm text-mute">
+                    {apiKey.lastUsedAt ? new Date(apiKey.lastUsedAt).toLocaleString() : 'Never'}
+                  </td>
+                  <td className="py-sm">
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteApiKey(apiKey.id, apiKey.name)}
+                      className="font-label-caps text-label-caps text-error border-b border-error uppercase"
+                    >
+                      Revoke
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        <form onSubmit={(e) => void handleCreateApiKey(e)} className="flex gap-sm">
+          <input
+            className="border border-hairline rounded px-md py-sm"
+            placeholder="Key name (e.g. production server)"
+            value={apiKeyName}
+            onChange={(e) => setApiKeyName(e.target.value)}
+            required
+          />
+          <button type="submit" className="bg-ink text-surface px-xl py-md rounded-full font-button-md">
+            Generate key
           </button>
         </form>
       </section>

@@ -104,6 +104,12 @@ replication.
 
 ## Domain model
 
-The feature flags / apps / environments / config domain model is not implemented yet — this is a
-scaffold providing the shared infrastructure (auth, persistence, build/deploy plumbing) only. See
-`CLAUDE.md` for follow-up work.
+Apps own Environments, FeatureFlags (with per-environment on/off values) and ConfigEntries
+(with per-environment typed values: `STRING`/`NUMBER`/`BOOLEAN`/`JSON`). Management is done
+through an authenticated (OAuth2 session) REST API consumed by the React UI.
+
+## Public exposure API
+
+Other Sloboda apps can fetch an app's flags and config values at runtime via a public,
+read-only endpoint authenticated with a per-App API key (not the OAuth2 session). See
+[`docs/public-api.md`](docs/public-api.md) for the full contract.
