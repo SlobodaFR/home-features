@@ -1,3 +1,4 @@
+import { ApiKey, ApiKeyWithSecret } from '../domain/api-key';
 import { App } from '../domain/app';
 import { ConfigEntryWithValues, ConfigValueType } from '../domain/config-entry';
 import { Environment } from '../domain/environment';
@@ -51,6 +52,10 @@ export interface SaveConfigEntryPayload {
   name: string;
   description?: string | null;
   type: ConfigValueType;
+}
+
+export interface SaveApiKeyPayload {
+  name: string;
 }
 
 export const apiClient = {
@@ -144,5 +149,17 @@ export const apiClient = {
   },
   async setConfigValue(configEntryId: string, environmentId: string, value: string): Promise<void> {
     await sendJson(`/configs/${configEntryId}/values/${environmentId}`, 'PUT', { value });
+  },
+
+  // API keys
+  fetchApiKeys(appId: string): Promise<ApiKey[]> {
+    return getJson<ApiKey[]>(`/apps/${appId}/api-keys`);
+  },
+  async createApiKey(appId: string, payload: SaveApiKeyPayload): Promise<ApiKeyWithSecret> {
+    const response = await sendJson(`/apps/${appId}/api-keys`, 'POST', payload);
+    return response.json() as Promise<ApiKeyWithSecret>;
+  },
+  async deleteApiKey(id: string): Promise<void> {
+    await sendJson(`/api-keys/${id}`, 'DELETE', undefined);
   },
 };

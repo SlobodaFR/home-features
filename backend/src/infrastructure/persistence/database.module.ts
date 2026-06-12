@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ApiKeyOrmEntity } from './entities/api-key.orm-entity';
 import { AppOrmEntity } from './entities/app.orm-entity';
 import { ConfigEntryOrmEntity } from './entities/config-entry.orm-entity';
 import { ConfigValueOrmEntity } from './entities/config-value.orm-entity';
@@ -29,6 +30,7 @@ import { UserOrmEntity } from './entities/user.orm-entity';
           FlagValueOrmEntity,
           ConfigEntryOrmEntity,
           ConfigValueOrmEntity,
+          ApiKeyOrmEntity,
         ],
         synchronize: true,
         autoLoadEntities: true,
