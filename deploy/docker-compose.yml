@@ -1,3 +1,5 @@
+name: home-features
+
 services:
   features:
     image: ${IMAGE}:${IMAGE_TAG}
