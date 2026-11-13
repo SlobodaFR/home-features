@@ -17,20 +17,20 @@ describe('Environment', () => {
   });
 
   it('rejects an empty name', () => {
-    expect(() => Environment.create({ ...baseProps, name: '' })).toThrow();
+    expect(() => Environment.create({ ...baseProps, name: '' })).toThrow(/Environment name must not be empty/);
   });
 
   it('rejects an invalid slug', () => {
     expect(() =>
       Environment.create({ ...baseProps, slug: 'Production' }),
-    ).toThrow();
+    ).toThrow(/Invalid slug/);
   });
 
   it('rejects a negative order', () => {
-    expect(() => Environment.create({ ...baseProps, order: -1 })).toThrow();
+    expect(() => Environment.create({ ...baseProps, order: -1 })).toThrow(/non-negative integer/);
   });
 
   it('rejects a non-integer order', () => {
-    expect(() => Environment.create({ ...baseProps, order: 1.5 })).toThrow();
+    expect(() => Environment.create({ ...baseProps, order: 1.5 })).toThrow(/non-negative integer/);
   });
 });

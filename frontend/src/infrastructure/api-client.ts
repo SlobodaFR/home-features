@@ -24,7 +24,9 @@ async function sendJson(path: string, method: string, body: unknown): Promise<Re
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => null);
+    const errorBody = (await response.json().catch(() => null)) as {
+      message?: string | string[];
+    } | null;
     throw new Error(errorBody?.message ? String(errorBody.message) : `Request failed (${response.status})`);
   }
   return response;

@@ -164,7 +164,7 @@ describe('SetFlagValueUseCase', () => {
 
     await expect(
       useCase.execute('flag-1', 'env-1', true, 'other-user'),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/not found/);
   });
 
   it('throws 404 if the environment does not belong to the same app', async () => {
@@ -172,6 +172,6 @@ describe('SetFlagValueUseCase', () => {
 
     await expect(
       useCase.execute('flag-1', 'unknown-env', true, 'user-1'),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/not found/);
   });
 });

@@ -17,12 +17,12 @@ describe('App', () => {
   });
 
   it('rejects an empty name', () => {
-    expect(() => App.create({ ...baseProps, name: '  ' })).toThrow();
+    expect(() => App.create({ ...baseProps, name: '  ' })).toThrow(/App name must not be empty/);
   });
 
   it('rejects an invalid slug', () => {
     expect(() =>
       App.create({ ...baseProps, slug: 'Ecommerce Core' }),
-    ).toThrow();
+    ).toThrow(/Invalid slug/);
   });
 });

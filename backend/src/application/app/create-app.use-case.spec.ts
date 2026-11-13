@@ -60,7 +60,7 @@ describe('CreateAppUseCase', () => {
         { name: 'E-commerce Core', slug: 'Invalid Slug', description: null },
         'user-1',
       ),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/Invalid slug/);
   });
 
   it('rejects a duplicate name/slug for the same user with a 409', async () => {
@@ -77,14 +77,14 @@ describe('CreateAppUseCase', () => {
         { name: 'E-commerce Core', slug: 'another-slug', description: null },
         'user-1',
       ),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/already exists/);
 
     await expect(
       useCase.execute(
         { name: 'Another Name', slug: 'ecommerce-core', description: null },
         'user-1',
       ),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/already exists/);
   });
 
   it('allows the same name/slug across different users', async () => {

@@ -16,12 +16,12 @@ describe('FeatureFlag', () => {
   });
 
   it('rejects an empty name', () => {
-    expect(() => FeatureFlag.create({ ...baseProps, name: '' })).toThrow();
+    expect(() => FeatureFlag.create({ ...baseProps, name: '' })).toThrow(/Feature flag name must not be empty/);
   });
 
   it('rejects an invalid key', () => {
     expect(() =>
       FeatureFlag.create({ ...baseProps, key: 'New Checkout Flow' }),
-    ).toThrow();
+    ).toThrow(/Invalid slug/);
   });
 });
