@@ -189,8 +189,12 @@ describe('Feature flag controllers (integration)', () => {
     expect(remainingEnvironments).toHaveLength(1);
 
     // Ownership is enforced: a different user cannot access this app
-    await expect(appsController.get(app.id, OTHER_USER)).rejects.toThrow(/not found/);
-    await expect(appFlagsController.list(app.id, OTHER_USER)).rejects.toThrow(/not found/);
+    await expect(appsController.get(app.id, OTHER_USER)).rejects.toThrow(
+      /not found/,
+    );
+    await expect(appFlagsController.list(app.id, OTHER_USER)).rejects.toThrow(
+      /not found/,
+    );
 
     // Delete the app cascades to flags/configs/environments
     await appsController.remove(app.id, USER);

@@ -16,7 +16,9 @@ describe('FeatureFlag', () => {
   });
 
   it('rejects an empty name', () => {
-    expect(() => FeatureFlag.create({ ...baseProps, name: '' })).toThrow(/Feature flag name must not be empty/);
+    expect(() => FeatureFlag.create({ ...baseProps, name: '' })).toThrow(
+      /Feature flag name must not be empty/,
+    );
   });
 
   it('rejects an invalid key', () => {

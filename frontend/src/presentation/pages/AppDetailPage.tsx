@@ -20,21 +20,35 @@ export function AppDetailPage() {
 
   const [configKey, setConfigKey] = useState('');
   const [configName, setConfigName] = useState('');
-  const [configType, setConfigType] = useState<ConfigValueType>(ConfigValueType.STRING);
+  const [configType, setConfigType] = useState<ConfigValueType>(
+    ConfigValueType.STRING,
+  );
 
   const [apiKeyName, setApiKeyName] = useState('');
-  const [createdApiKey, setCreatedApiKey] = useState<ApiKeyWithSecret | null>(null);
+  const [createdApiKey, setCreatedApiKey] = useState<ApiKeyWithSecret | null>(
+    null,
+  );
 
   if (!appId) {
-    return <p className="text-error px-margin-mobile py-section">Missing app id.</p>;
+    return (
+      <p className="text-error px-margin-mobile py-section">Missing app id.</p>
+    );
   }
 
   if (loading && !overview) {
-    return <div className="px-margin-mobile py-section text-center text-mute">Loading...</div>;
+    return (
+      <div className="px-margin-mobile py-section text-center text-mute">
+        Loading...
+      </div>
+    );
   }
 
   if (error || !overview) {
-    return <div className="px-margin-mobile py-section text-center text-error">Error: {error}</div>;
+    return (
+      <div className="px-margin-mobile py-section text-center text-error">
+        Error: {error}
+      </div>
+    );
   }
 
   const { app, environments, flags, configs } = overview;
@@ -73,7 +87,11 @@ export function AppDetailPage() {
     await refresh();
   }
 
-  async function handleToggleFlag(flagId: string, environmentId: string, enabled: boolean) {
+  async function handleToggleFlag(
+    flagId: string,
+    environmentId: string,
+    enabled: boolean,
+  ) {
     await apiClient.setFlagValue(flagId, environmentId, enabled);
     await refresh();
   }
@@ -97,7 +115,11 @@ export function AppDetailPage() {
     await refresh();
   }
 
-  async function handleSetConfigValue(configEntryId: string, environmentId: string, value: string) {
+  async function handleSetConfigValue(
+    configEntryId: string,
+    environmentId: string,
+    value: string,
+  ) {
     try {
       await apiClient.setConfigValue(configEntryId, environmentId, value);
       await refresh();
@@ -114,7 +136,12 @@ export function AppDetailPage() {
   }
 
   async function handleDeleteApiKey(id: string, name: string) {
-    if (!window.confirm(`Revoke API key "${name}"? Apps using it will lose access.`)) return;
+    if (
+      !window.confirm(
+        `Revoke API key "${name}"? Apps using it will lose access.`,
+      )
+    )
+      return;
     await apiKeys.deleteApiKey(id);
     if (createdApiKey?.id === id) {
       setCreatedApiKey(null);
@@ -131,16 +158,26 @@ export function AppDetailPage() {
 
   return (
     <main className="min-h-screen px-margin-mobile py-section max-w-5xl mx-auto">
-      <Link to="/" className="font-label-caps text-label-caps text-mute border-b border-mute uppercase">
+      <Link
+        to="/"
+        className="font-label-caps text-label-caps text-mute border-b border-mute uppercase"
+      >
         Back to apps
       </Link>
-      <h1 className="font-heading-xl text-heading-xl text-ink mt-md mb-xl">{app.name}</h1>
+      <h1 className="font-heading-xl text-heading-xl text-ink mt-md mb-xl">
+        {app.name}
+      </h1>
 
       <section className="mb-xl">
-        <h2 className="font-heading-md text-heading-md text-ink mb-md">Environments</h2>
+        <h2 className="font-heading-md text-heading-md text-ink mb-md">
+          Environments
+        </h2>
         <div className="flex flex-wrap gap-sm mb-md">
           {environments.map((env) => (
-            <span key={env.id} className="border border-hairline rounded px-md py-sm flex items-center gap-sm">
+            <span
+              key={env.id}
+              className="border border-hairline rounded px-md py-sm flex items-center gap-sm"
+            >
               {env.name}
               <button
                 type="button"
@@ -152,7 +189,10 @@ export function AppDetailPage() {
             </span>
           ))}
         </div>
-        <form onSubmit={(e) => void handleCreateEnvironment(e)} className="flex gap-sm">
+        <form
+          onSubmit={(e) => void handleCreateEnvironment(e)}
+          className="flex gap-sm"
+        >
           <input
             className="border border-hairline rounded px-md py-sm"
             placeholder="Environment name (e.g. production)"
@@ -166,23 +206,33 @@ export function AppDetailPage() {
             value={envSlug}
             onChange={(e) => setEnvSlug(e.target.value)}
           />
-          <button type="submit" className="bg-ink text-surface px-xl py-md rounded-full font-button-md">
+          <button
+            type="submit"
+            className="bg-ink text-surface px-xl py-md rounded-full font-button-md"
+          >
             Add
           </button>
         </form>
       </section>
 
       <section className="mb-xl">
-        <h2 className="font-heading-md text-heading-md text-ink mb-md">Feature flags</h2>
+        <h2 className="font-heading-md text-heading-md text-ink mb-md">
+          Feature flags
+        </h2>
         {environments.length === 0 ? (
           <p className="text-mute mb-md">Add an environment first.</p>
         ) : (
           <table className="w-full border-collapse mb-md">
             <thead>
               <tr>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm">Flag</th>
+                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm">
+                  Flag
+                </th>
                 {environments.map((env) => (
-                  <th key={env.id} className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
+                  <th
+                    key={env.id}
+                    className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md"
+                  >
                     {env.name}
                   </th>
                 ))}
@@ -193,17 +243,29 @@ export function AppDetailPage() {
               {flags.map((flag) => (
                 <tr key={flag.id} className="border-t border-hairline">
                   <td className="py-sm">
-                    <div className="font-body-md text-body-md text-ink">{flag.name}</div>
-                    <div className="font-body-sm text-body-sm text-mute">{flag.key}</div>
+                    <div className="font-body-md text-body-md text-ink">
+                      {flag.name}
+                    </div>
+                    <div className="font-body-sm text-body-sm text-mute">
+                      {flag.key}
+                    </div>
                   </td>
                   {environments.map((env) => {
-                    const value = flag.values.find((v) => v.environmentId === env.id);
+                    const value = flag.values.find(
+                      (v) => v.environmentId === env.id,
+                    );
                     return (
                       <td key={env.id} className="py-sm px-md">
                         <input
                           type="checkbox"
                           checked={value?.enabled ?? false}
-                          onChange={(e) => void handleToggleFlag(flag.id, env.id, e.target.checked)}
+                          onChange={(e) =>
+                            void handleToggleFlag(
+                              flag.id,
+                              env.id,
+                              e.target.checked,
+                            )
+                          }
                         />
                       </td>
                     );
@@ -222,7 +284,10 @@ export function AppDetailPage() {
             </tbody>
           </table>
         )}
-        <form onSubmit={(e) => void handleCreateFlag(e)} className="flex gap-sm">
+        <form
+          onSubmit={(e) => void handleCreateFlag(e)}
+          className="flex gap-sm"
+        >
           <input
             className="border border-hairline rounded px-md py-sm"
             placeholder="Flag name"
@@ -236,23 +301,33 @@ export function AppDetailPage() {
             value={flagKey}
             onChange={(e) => setFlagKey(e.target.value)}
           />
-          <button type="submit" className="bg-ink text-surface px-xl py-md rounded-full font-button-md">
+          <button
+            type="submit"
+            className="bg-ink text-surface px-xl py-md rounded-full font-button-md"
+          >
             Add flag
           </button>
         </form>
       </section>
 
       <section className="mb-xl">
-        <h2 className="font-heading-md text-heading-md text-ink mb-md">Configs</h2>
+        <h2 className="font-heading-md text-heading-md text-ink mb-md">
+          Configs
+        </h2>
         {environments.length === 0 ? (
           <p className="text-mute mb-md">Add an environment first.</p>
         ) : (
           <table className="w-full border-collapse mb-md">
             <thead>
               <tr>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm">Config</th>
+                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm">
+                  Config
+                </th>
                 {environments.map((env) => (
-                  <th key={env.id} className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
+                  <th
+                    key={env.id}
+                    className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md"
+                  >
                     {env.name}
                   </th>
                 ))}
@@ -263,18 +338,28 @@ export function AppDetailPage() {
               {configs.map((config) => (
                 <tr key={config.id} className="border-t border-hairline">
                   <td className="py-sm">
-                    <div className="font-body-md text-body-md text-ink">{config.name}</div>
+                    <div className="font-body-md text-body-md text-ink">
+                      {config.name}
+                    </div>
                     <div className="font-body-sm text-body-sm text-mute">
                       {config.key} ({config.type})
                     </div>
                   </td>
                   {environments.map((env) => {
-                    const value = config.values.find((v) => v.environmentId === env.id);
+                    const value = config.values.find(
+                      (v) => v.environmentId === env.id,
+                    );
                     return (
                       <td key={env.id} className="py-sm px-md">
                         <ConfigValueEditor
                           value={value?.value ?? ''}
-                          onSave={(newValue) => void handleSetConfigValue(config.id, env.id, newValue)}
+                          onSave={(newValue) =>
+                            void handleSetConfigValue(
+                              config.id,
+                              env.id,
+                              newValue,
+                            )
+                          }
                         />
                       </td>
                     );
@@ -282,7 +367,9 @@ export function AppDetailPage() {
                   <td className="py-sm">
                     <button
                       type="button"
-                      onClick={() => void handleDeleteConfig(config.id, config.name)}
+                      onClick={() =>
+                        void handleDeleteConfig(config.id, config.name)
+                      }
                       className="font-label-caps text-label-caps text-error border-b border-error uppercase"
                     >
                       Delete
@@ -293,7 +380,10 @@ export function AppDetailPage() {
             </tbody>
           </table>
         )}
-        <form onSubmit={(e) => void handleCreateConfig(e)} className="flex gap-sm">
+        <form
+          onSubmit={(e) => void handleCreateConfig(e)}
+          className="flex gap-sm"
+        >
           <input
             className="border border-hairline rounded px-md py-sm"
             placeholder="Config name"
@@ -325,24 +415,31 @@ export function AppDetailPage() {
               </option>
             ))}
           </select>
-          <button type="submit" className="bg-ink text-surface px-xl py-md rounded-full font-button-md">
+          <button
+            type="submit"
+            className="bg-ink text-surface px-xl py-md rounded-full font-button-md"
+          >
             Add config
           </button>
         </form>
       </section>
 
       <section className="mb-xl">
-        <h2 className="font-heading-md text-heading-md text-ink mb-md">API keys</h2>
+        <h2 className="font-heading-md text-heading-md text-ink mb-md">
+          API keys
+        </h2>
         <p className="font-body-sm text-body-sm text-mute mb-md">
-          Use an API key to fetch this app's flags and configs from other services via{' '}
-          <code>GET /api/v1/flags-and-configs?environment=&lt;slug&gt;</code> with an{' '}
-          <code>Authorization: Bearer &lt;key&gt;</code> header.
+          Use an API key to fetch this app's flags and configs from other
+          services via{' '}
+          <code>GET /api/v1/flags-and-configs?environment=&lt;slug&gt;</code>{' '}
+          with an <code>Authorization: Bearer &lt;key&gt;</code> header.
         </p>
 
         {createdApiKey && (
           <div className="border border-hairline rounded px-md py-md mb-md bg-surface">
             <p className="font-body-sm text-body-sm text-ink mb-sm">
-              New key <strong>{createdApiKey.name}</strong> created. Copy it now - it won't be shown again.
+              New key <strong>{createdApiKey.name}</strong> created. Copy it now
+              - it won't be shown again.
             </p>
             <div className="flex gap-sm items-center">
               <code className="font-body-sm text-body-sm break-all border border-hairline rounded px-sm py-xs flex-1">
@@ -359,7 +456,9 @@ export function AppDetailPage() {
           </div>
         )}
 
-        {apiKeys.error && <p className="text-error mb-md">Error: {apiKeys.error}</p>}
+        {apiKeys.error && (
+          <p className="text-error mb-md">Error: {apiKeys.error}</p>
+        )}
 
         {apiKeys.apiKeys.length === 0 ? (
           <p className="text-mute mb-md">No API keys yet.</p>
@@ -367,26 +466,38 @@ export function AppDetailPage() {
           <table className="w-full border-collapse mb-md">
             <thead>
               <tr>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm">Name</th>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">Created</th>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">Last used</th>
+                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm">
+                  Name
+                </th>
+                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
+                  Created
+                </th>
+                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
+                  Last used
+                </th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {apiKeys.apiKeys.map((apiKey) => (
                 <tr key={apiKey.id} className="border-t border-hairline">
-                  <td className="py-sm font-body-md text-body-md text-ink">{apiKey.name}</td>
+                  <td className="py-sm font-body-md text-body-md text-ink">
+                    {apiKey.name}
+                  </td>
                   <td className="py-sm px-md font-body-sm text-body-sm text-mute">
                     {new Date(apiKey.createdAt).toLocaleString()}
                   </td>
                   <td className="py-sm px-md font-body-sm text-body-sm text-mute">
-                    {apiKey.lastUsedAt ? new Date(apiKey.lastUsedAt).toLocaleString() : 'Never'}
+                    {apiKey.lastUsedAt
+                      ? new Date(apiKey.lastUsedAt).toLocaleString()
+                      : 'Never'}
                   </td>
                   <td className="py-sm">
                     <button
                       type="button"
-                      onClick={() => void handleDeleteApiKey(apiKey.id, apiKey.name)}
+                      onClick={() =>
+                        void handleDeleteApiKey(apiKey.id, apiKey.name)
+                      }
                       className="font-label-caps text-label-caps text-error border-b border-error uppercase"
                     >
                       Revoke
@@ -398,7 +509,10 @@ export function AppDetailPage() {
           </table>
         )}
 
-        <form onSubmit={(e) => void handleCreateApiKey(e)} className="flex gap-sm">
+        <form
+          onSubmit={(e) => void handleCreateApiKey(e)}
+          className="flex gap-sm"
+        >
           <input
             className="border border-hairline rounded px-md py-sm"
             placeholder="Key name (e.g. production server)"
@@ -406,7 +520,10 @@ export function AppDetailPage() {
             onChange={(e) => setApiKeyName(e.target.value)}
             required
           />
-          <button type="submit" className="bg-ink text-surface px-xl py-md rounded-full font-button-md">
+          <button
+            type="submit"
+            className="bg-ink text-surface px-xl py-md rounded-full font-button-md"
+          >
             Generate key
           </button>
         </form>
@@ -415,7 +532,13 @@ export function AppDetailPage() {
   );
 }
 
-function ConfigValueEditor({ value, onSave }: { value: string; onSave: (value: string) => void }) {
+function ConfigValueEditor({
+  value,
+  onSave,
+}: {
+  value: string;
+  onSave: (value: string) => void;
+}) {
   const [draft, setDraft] = useState(value);
 
   return (

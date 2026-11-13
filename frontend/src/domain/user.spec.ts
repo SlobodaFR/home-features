@@ -3,7 +3,11 @@ import { CurrentUser } from './user';
 
 describe('CurrentUser', () => {
   it('has the expected shape', () => {
-    const user: CurrentUser = { id: 'user-1', email: 'john@example.com', name: 'John' };
+    const user: CurrentUser = {
+      id: 'user-1',
+      email: 'john@example.com',
+      name: 'John',
+    };
 
     expect(user.id).toBe('user-1');
     expect(user.email).toBe('john@example.com');
