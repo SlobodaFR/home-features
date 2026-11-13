@@ -30,9 +30,9 @@ to the given environment.
 
 **Query parameters**
 
-| Name | Required | Description |
-| --- | --- | --- |
-| `environment` | yes | Slug of the environment (e.g. `production`, `staging`) within the App that owns the API key. |
+| Name          | Required | Description                                                                                  |
+| ------------- | -------- | -------------------------------------------------------------------------------------------- |
+| `environment` | yes      | Slug of the environment (e.g. `production`, `staging`) within the App that owns the API key. |
 
 **Response `200 OK`**
 
@@ -66,10 +66,10 @@ to the given environment.
 
 **Error responses**
 
-| Status | When |
-| --- | --- |
+| Status             | When                                                                         |
+| ------------------ | ---------------------------------------------------------------------------- |
 | `401 Unauthorized` | Missing/malformed `Authorization` header, or the API key is unknown/revoked. |
-| `404 Not Found` | The `environment` slug does not exist for the App that owns the API key. |
+| `404 Not Found`    | The `environment` slug does not exist for the App that owns the API key.     |
 
 ## Side effects
 

@@ -9,14 +9,20 @@ import { CurrentUser } from '../domain/user';
 const BASE_URL = '/api';
 
 async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${BASE_URL}${path}`, { credentials: 'include' });
+  const response = await fetch(`${BASE_URL}${path}`, {
+    credentials: 'include',
+  });
   if (!response.ok) {
     throw new Error(`Request to ${path} failed with status ${response.status}`);
   }
   return response.json() as Promise<T>;
 }
 
-async function sendJson(path: string, method: string, body: unknown): Promise<Response> {
+async function sendJson(
+  path: string,
+  method: string,
+  body: unknown,
+): Promise<Response> {
   const response = await fetch(`${BASE_URL}${path}`, {
     method,
     credentials: 'include',
@@ -27,7 +33,11 @@ async function sendJson(path: string, method: string, body: unknown): Promise<Re
     const errorBody = (await response.json().catch(() => null)) as {
       message?: string | string[];
     } | null;
-    throw new Error(errorBody?.message ? String(errorBody.message) : `Request failed (${response.status})`);
+    throw new Error(
+      errorBody?.message
+        ? String(errorBody.message)
+        : `Request failed (${response.status})`,
+    );
   }
   return response;
 }
@@ -99,19 +109,36 @@ export const apiClient = {
   fetchEnvironments(appId: string): Promise<Environment[]> {
     return getJson<Environment[]>(`/apps/${appId}/environments`);
   },
-  async createEnvironment(appId: string, payload: SaveEnvironmentPayload): Promise<Environment> {
-    const response = await sendJson(`/apps/${appId}/environments`, 'POST', payload);
+  async createEnvironment(
+    appId: string,
+    payload: SaveEnvironmentPayload,
+  ): Promise<Environment> {
+    const response = await sendJson(
+      `/apps/${appId}/environments`,
+      'POST',
+      payload,
+    );
     return response.json() as Promise<Environment>;
   },
-  async updateEnvironment(id: string, payload: SaveEnvironmentPayload): Promise<Environment> {
+  async updateEnvironment(
+    id: string,
+    payload: SaveEnvironmentPayload,
+  ): Promise<Environment> {
     const response = await sendJson(`/environments/${id}`, 'PATCH', payload);
     return response.json() as Promise<Environment>;
   },
   async deleteEnvironment(id: string): Promise<void> {
     await sendJson(`/environments/${id}`, 'DELETE', undefined);
   },
-  async reorderEnvironments(appId: string, environmentIds: string[]): Promise<Environment[]> {
-    const response = await sendJson(`/apps/${appId}/environments/reorder`, 'PUT', { environmentIds });
+  async reorderEnvironments(
+    appId: string,
+    environmentIds: string[],
+  ): Promise<Environment[]> {
+    const response = await sendJson(
+      `/apps/${appId}/environments/reorder`,
+      'PUT',
+      { environmentIds },
+    );
     return response.json() as Promise<Environment[]>;
   },
 
@@ -119,45 +146,72 @@ export const apiClient = {
   fetchFeatureFlags(appId: string): Promise<FeatureFlagWithValues[]> {
     return getJson<FeatureFlagWithValues[]>(`/apps/${appId}/flags`);
   },
-  async createFeatureFlag(appId: string, payload: SaveFeatureFlagPayload): Promise<FeatureFlagWithValues> {
+  async createFeatureFlag(
+    appId: string,
+    payload: SaveFeatureFlagPayload,
+  ): Promise<FeatureFlagWithValues> {
     const response = await sendJson(`/apps/${appId}/flags`, 'POST', payload);
     return response.json() as Promise<FeatureFlagWithValues>;
   },
-  async updateFeatureFlag(id: string, payload: SaveFeatureFlagPayload): Promise<FeatureFlagWithValues> {
+  async updateFeatureFlag(
+    id: string,
+    payload: SaveFeatureFlagPayload,
+  ): Promise<FeatureFlagWithValues> {
     const response = await sendJson(`/flags/${id}`, 'PATCH', payload);
     return response.json() as Promise<FeatureFlagWithValues>;
   },
   async deleteFeatureFlag(id: string): Promise<void> {
     await sendJson(`/flags/${id}`, 'DELETE', undefined);
   },
-  async setFlagValue(flagId: string, environmentId: string, enabled: boolean): Promise<void> {
-    await sendJson(`/flags/${flagId}/values/${environmentId}`, 'PUT', { enabled });
+  async setFlagValue(
+    flagId: string,
+    environmentId: string,
+    enabled: boolean,
+  ): Promise<void> {
+    await sendJson(`/flags/${flagId}/values/${environmentId}`, 'PUT', {
+      enabled,
+    });
   },
 
   // Config entries
   fetchConfigEntries(appId: string): Promise<ConfigEntryWithValues[]> {
     return getJson<ConfigEntryWithValues[]>(`/apps/${appId}/configs`);
   },
-  async createConfigEntry(appId: string, payload: SaveConfigEntryPayload): Promise<ConfigEntryWithValues> {
+  async createConfigEntry(
+    appId: string,
+    payload: SaveConfigEntryPayload,
+  ): Promise<ConfigEntryWithValues> {
     const response = await sendJson(`/apps/${appId}/configs`, 'POST', payload);
     return response.json() as Promise<ConfigEntryWithValues>;
   },
-  async updateConfigEntry(id: string, payload: SaveConfigEntryPayload): Promise<ConfigEntryWithValues> {
+  async updateConfigEntry(
+    id: string,
+    payload: SaveConfigEntryPayload,
+  ): Promise<ConfigEntryWithValues> {
     const response = await sendJson(`/configs/${id}`, 'PATCH', payload);
     return response.json() as Promise<ConfigEntryWithValues>;
   },
   async deleteConfigEntry(id: string): Promise<void> {
     await sendJson(`/configs/${id}`, 'DELETE', undefined);
   },
-  async setConfigValue(configEntryId: string, environmentId: string, value: string): Promise<void> {
-    await sendJson(`/configs/${configEntryId}/values/${environmentId}`, 'PUT', { value });
+  async setConfigValue(
+    configEntryId: string,
+    environmentId: string,
+    value: string,
+  ): Promise<void> {
+    await sendJson(`/configs/${configEntryId}/values/${environmentId}`, 'PUT', {
+      value,
+    });
   },
 
   // API keys
   fetchApiKeys(appId: string): Promise<ApiKey[]> {
     return getJson<ApiKey[]>(`/apps/${appId}/api-keys`);
   },
-  async createApiKey(appId: string, payload: SaveApiKeyPayload): Promise<ApiKeyWithSecret> {
+  async createApiKey(
+    appId: string,
+    payload: SaveApiKeyPayload,
+  ): Promise<ApiKeyWithSecret> {
     const response = await sendJson(`/apps/${appId}/api-keys`, 'POST', payload);
     return response.json() as Promise<ApiKeyWithSecret>;
   },

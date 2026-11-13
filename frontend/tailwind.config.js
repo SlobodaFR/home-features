@@ -39,11 +39,17 @@ export default {
         'body-sm': ['Inter', 'sans-serif'],
       },
       fontSize: {
-        'label-caps': ['12px', { lineHeight: '1.2', letterSpacing: '0.05em', fontWeight: '700' }],
+        'label-caps': [
+          '12px',
+          { lineHeight: '1.2', letterSpacing: '0.05em', fontWeight: '700' },
+        ],
         'heading-lg': ['24px', { lineHeight: '1.2', fontWeight: '600' }],
         'body-md': ['16px', { lineHeight: '1.5', fontWeight: '400' }],
         'heading-xl': ['32px', { lineHeight: '1.2', fontWeight: '700' }],
-        'display-campaign-mobile': ['56px', { lineHeight: '0.9', fontWeight: '500' }],
+        'display-campaign-mobile': [
+          '56px',
+          { lineHeight: '0.9', fontWeight: '500' },
+        ],
         'display-campaign': ['96px', { lineHeight: '0.9', fontWeight: '500' }],
         'button-md': ['16px', { lineHeight: '1.5', fontWeight: '600' }],
         'body-sm': ['14px', { lineHeight: '1.4', fontWeight: '400' }],

@@ -36,7 +36,11 @@ export function AppsPage() {
   }
 
   async function handleDelete(appId: string, appName: string) {
-    if (!window.confirm(`Delete app "${appName}" and all its environments, flags and configs?`)) {
+    if (
+      !window.confirm(
+        `Delete app "${appName}" and all its environments, flags and configs?`,
+      )
+    ) {
       return;
     }
     await apiClient.deleteApp(appId);
@@ -46,18 +50,31 @@ export function AppsPage() {
   return (
     <main className="min-h-screen px-margin-mobile py-section max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-xl">
-        <h1 className="font-heading-xl text-heading-xl text-ink">Kinetic Feature Management</h1>
+        <h1 className="font-heading-xl text-heading-xl text-ink">
+          Kinetic Feature Management
+        </h1>
         <div className="flex items-center gap-md">
-          <span className="text-mute font-body-sm text-body-sm">{user?.email}</span>
-          <button type="button" onClick={() => void logout()} className="font-label-caps text-label-caps text-mute border-b border-mute uppercase">
+          <span className="text-mute font-body-sm text-body-sm">
+            {user?.email}
+          </span>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="font-label-caps text-label-caps text-mute border-b border-mute uppercase"
+          >
             Log out
           </button>
         </div>
       </div>
 
       <section className="mb-xl">
-        <h2 className="font-heading-md text-heading-md text-ink mb-md">New app</h2>
-        <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-sm max-w-md">
+        <h2 className="font-heading-md text-heading-md text-ink mb-md">
+          New app
+        </h2>
+        <form
+          onSubmit={(e) => void handleSubmit(e)}
+          className="flex flex-col gap-sm max-w-md"
+        >
           <input
             className="border border-hairline rounded px-md py-sm"
             placeholder="Name"
@@ -77,7 +94,9 @@ export function AppsPage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-          {formError && <p className="text-error font-body-sm text-body-sm">{formError}</p>}
+          {formError && (
+            <p className="text-error font-body-sm text-body-sm">{formError}</p>
+          )}
           <button
             type="submit"
             disabled={submitting}
@@ -99,10 +118,17 @@ export function AppsPage() {
         ) : (
           <ul className="flex flex-col gap-sm">
             {apps.map((app) => (
-              <li key={app.id} className="border border-hairline rounded px-md py-sm flex justify-between items-center">
+              <li
+                key={app.id}
+                className="border border-hairline rounded px-md py-sm flex justify-between items-center"
+              >
                 <Link to={`/apps/${app.id}`} className="flex flex-col">
-                  <span className="font-body-md text-body-md text-ink">{app.name}</span>
-                  <span className="font-body-sm text-body-sm text-mute">{app.slug}</span>
+                  <span className="font-body-md text-body-md text-ink">
+                    {app.name}
+                  </span>
+                  <span className="font-body-sm text-body-sm text-mute">
+                    {app.slug}
+                  </span>
                 </Link>
                 <button
                   type="button"
