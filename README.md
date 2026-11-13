@@ -81,6 +81,9 @@ npm run dev:frontend   # Vite on :5173, proxies /api to :3002
 
 ```bash
 npm test               # backend + frontend (vitest)
+npm run lint           # Oxlint (type-aware)
+npm run format:check   # Oxfmt (npm run format to write)
+npm run typecheck      # tsc backend + frontend
 ```
 
 ## Build & run with Docker

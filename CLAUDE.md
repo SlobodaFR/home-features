@@ -56,6 +56,9 @@ npm test                       # backend + frontend (vitest)
 npm run build                   # builds frontend then backend (copies frontend/dist into backend/dist/public)
 npm run build -w backend        # backend only (requires frontend build first for copy-frontend step)
 npm run build -w frontend        # frontend only
+npm run lint                    # Oxlint (type-aware)
+npm run format:check            # Oxfmt (`npm run format` pour écrire)
+npm run typecheck               # tsc backend + frontend
 ```
 
 ## Deployment
