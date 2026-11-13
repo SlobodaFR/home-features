@@ -45,7 +45,7 @@ frontend/src/
 ```bash
 npm install
 cp backend/.env.example backend/.env   # fill in AUTH_CLIENT_SECRET, AUTH_WEBHOOK_SECRET, etc.
-npm run dev:backend    # Nest on :3002
+npm run dev:backend    # tsc once, then node --watch on dist (re-run after editing sources), :3002
 npm run dev:frontend   # Vite on :5173, proxies /api to :3002
 ```
 

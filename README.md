@@ -73,7 +73,7 @@ automatically by `ConfigModule` in dev, and can also be passed to `docker run --
 ```bash
 npm install
 cp backend/.env.example backend/.env   # then edit AUTH_CLIENT_SECRET etc.
-npm run dev:backend    # Nest on :3002
+npm run dev:backend    # tsc once, then node --watch on dist (re-run after editing sources), :3002
 npm run dev:frontend   # Vite on :5173, proxies /api to :3002
 ```
 
