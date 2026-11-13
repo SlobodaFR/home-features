@@ -11,24 +11,24 @@ describe('Slug', () => {
   });
 
   it('rejects uppercase letters', () => {
-    expect(() => Slug.create('New-Checkout')).toThrow();
+    expect(() => Slug.create('New-Checkout')).toThrow(/Invalid slug/);
   });
 
   it('rejects spaces', () => {
-    expect(() => Slug.create('new checkout')).toThrow();
+    expect(() => Slug.create('new checkout')).toThrow(/Invalid slug/);
   });
 
   it('rejects leading/trailing hyphens', () => {
-    expect(() => Slug.create('-checkout')).toThrow();
-    expect(() => Slug.create('checkout-')).toThrow();
+    expect(() => Slug.create('-checkout')).toThrow(/Invalid slug/);
+    expect(() => Slug.create('checkout-')).toThrow(/Invalid slug/);
   });
 
   it('rejects consecutive hyphens', () => {
-    expect(() => Slug.create('new--checkout')).toThrow();
+    expect(() => Slug.create('new--checkout')).toThrow(/Invalid slug/);
   });
 
   it('rejects an empty string', () => {
-    expect(() => Slug.create('')).toThrow();
+    expect(() => Slug.create('')).toThrow(/Invalid slug/);
   });
 
   it('compares slugs by value', () => {

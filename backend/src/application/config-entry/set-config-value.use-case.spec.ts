@@ -163,7 +163,7 @@ describe('SetConfigValueUseCase', () => {
 
     await expect(
       useCase.execute('config-1', 'env-1', 'not-a-number', 'user-1'),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/Invalid NUMBER/);
   });
 
   it('sets a BOOLEAN value', async () => {
@@ -178,7 +178,7 @@ describe('SetConfigValueUseCase', () => {
 
     await expect(
       useCase.execute('config-1', 'env-1', 'yes', 'user-1'),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/Invalid BOOLEAN/);
   });
 
   it('sets a JSON value', async () => {
@@ -193,7 +193,7 @@ describe('SetConfigValueUseCase', () => {
 
     await expect(
       useCase.execute('config-1', 'env-1', '{invalid}', 'user-1'),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/Invalid JSON/);
   });
 
   it('upserts (updates) an existing config value', async () => {
@@ -213,7 +213,7 @@ describe('SetConfigValueUseCase', () => {
 
     await expect(
       useCase.execute('config-1', 'env-1', 'hello', 'other-user'),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/not found/);
   });
 
   it('throws 404 if the environment does not belong to the same app', async () => {
@@ -221,6 +221,6 @@ describe('SetConfigValueUseCase', () => {
 
     await expect(
       useCase.execute('config-1', 'unknown-env', 'hello', 'user-1'),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/not found/);
   });
 });

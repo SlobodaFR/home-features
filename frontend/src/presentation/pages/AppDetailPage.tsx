@@ -310,7 +310,14 @@ export function AppDetailPage() {
           <select
             className="border border-hairline rounded px-md py-sm"
             value={configType}
-            onChange={(e) => setConfigType(e.target.value as ConfigValueType)}
+            onChange={(e) => {
+              const selected = Object.values(ConfigValueType).find(
+                (type) => (type as string) === e.target.value,
+              );
+              if (selected) {
+                setConfigType(selected);
+              }
+            }}
           >
             {Object.values(ConfigValueType).map((type) => (
               <option key={type} value={type}>

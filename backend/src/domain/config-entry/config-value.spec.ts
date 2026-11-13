@@ -51,28 +51,28 @@ describe('ConfigValue', () => {
     it('rejects a non-numeric string', () => {
       expect(() =>
         ConfigValue.create(makeProps('not-a-number', ConfigValueType.NUMBER)),
-      ).toThrow();
+      ).toThrow(/Invalid NUMBER/);
     });
 
     it('rejects an empty string', () => {
       expect(() =>
         ConfigValue.create(makeProps('', ConfigValueType.NUMBER)),
-      ).toThrow();
+      ).toThrow(/Invalid NUMBER/);
     });
 
     it('rejects a whitespace-only string', () => {
       expect(() =>
         ConfigValue.create(makeProps('   ', ConfigValueType.NUMBER)),
-      ).toThrow();
+      ).toThrow(/Invalid NUMBER/);
     });
 
     it('rejects Infinity/NaN-producing strings', () => {
       expect(() =>
         ConfigValue.create(makeProps('Infinity', ConfigValueType.NUMBER)),
-      ).toThrow();
+      ).toThrow(/Invalid NUMBER/);
       expect(() =>
         ConfigValue.create(makeProps('NaN', ConfigValueType.NUMBER)),
-      ).toThrow();
+      ).toThrow(/Invalid NUMBER/);
     });
   });
 
@@ -92,22 +92,22 @@ describe('ConfigValue', () => {
     it('rejects "True" (case sensitive)', () => {
       expect(() =>
         ConfigValue.create(makeProps('True', ConfigValueType.BOOLEAN)),
-      ).toThrow();
+      ).toThrow(/Invalid BOOLEAN/);
     });
 
     it('rejects "1"/"0"', () => {
       expect(() =>
         ConfigValue.create(makeProps('1', ConfigValueType.BOOLEAN)),
-      ).toThrow();
+      ).toThrow(/Invalid BOOLEAN/);
       expect(() =>
         ConfigValue.create(makeProps('0', ConfigValueType.BOOLEAN)),
-      ).toThrow();
+      ).toThrow(/Invalid BOOLEAN/);
     });
 
     it('rejects an empty string', () => {
       expect(() =>
         ConfigValue.create(makeProps('', ConfigValueType.BOOLEAN)),
-      ).toThrow();
+      ).toThrow(/Invalid BOOLEAN/);
     });
   });
 
@@ -142,16 +142,16 @@ describe('ConfigValue', () => {
     it('rejects invalid JSON', () => {
       expect(() =>
         ConfigValue.create(makeProps('{invalid}', ConfigValueType.JSON)),
-      ).toThrow();
+      ).toThrow(/Invalid JSON/);
       expect(() =>
         ConfigValue.create(makeProps('{"a":1,}', ConfigValueType.JSON)),
-      ).toThrow();
+      ).toThrow(/Invalid JSON/);
     });
 
     it('rejects an empty string', () => {
       expect(() =>
         ConfigValue.create(makeProps('', ConfigValueType.JSON)),
-      ).toThrow();
+      ).toThrow(/Invalid JSON/);
     });
   });
 
@@ -165,7 +165,7 @@ describe('ConfigValue', () => {
     it('throws for invalid values', () => {
       expect(() =>
         ConfigValue.validate('nope', ConfigValueType.NUMBER),
-      ).toThrow();
+      ).toThrow(/Invalid NUMBER/);
     });
   });
 });
