@@ -52,7 +52,7 @@ npm run dev:frontend   # Vite on :5173, proxies /api to :3002
 ## Tests & build
 
 ```bash
-npm test                       # backend (jest) + frontend (vitest)
+npm test                       # backend + frontend (vitest)
 npm run build                   # builds frontend then backend (copies frontend/dist into backend/dist/public)
 npm run build -w backend        # backend only (requires frontend build first for copy-frontend step)
 npm run build -w frontend        # frontend only
