@@ -21,7 +21,7 @@
     "@nestjs/config": "^3.3.0",
     "@nestjs/serve-static": "^4.0.2",
     "better-sqlite3": "^12.11.1",
-    "typeorm": "^0.3.20",
+    "typeorm": "^0.3.31",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "class-validator": "^0.14.1",
