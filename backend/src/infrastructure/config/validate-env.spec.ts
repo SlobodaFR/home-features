@@ -15,6 +15,24 @@ describe('validateEnv', () => {
       expect(validateEnv(PROD)).toEqual(PROD);
     });
 
+    // Mirrors the .env written by .github/workflows/deploy-vps.yml: a stricter rule must not
+    // break the deployment.
+    it('accepts the environment the deploy workflow writes', () => {
+      const deployed = {
+        ...PROD,
+        PORT: '3000',
+        TRUST_PROXY_HOPS: '1',
+        DATABASE_PATH: '/app/backend/data/features.sqlite',
+        MINIO_ENDPOINT: '',
+        MINIO_BUCKET: '',
+        MINIO_REPLICA_PATH: '',
+        MINIO_REGION: '',
+        MINIO_ACCESS_KEY_ID: '',
+        MINIO_SECRET_ACCESS_KEY: '',
+      };
+      expect(validateEnv(deployed)).toEqual(deployed);
+    });
+
     it.each(['AUTH_CLIENT_ID', 'AUTH_CLIENT_SECRET', 'AUTH_WEBHOOK_SECRET'])(
       'rejects a missing or blank %s',
       (variable) => {
@@ -50,10 +68,7 @@ describe('validateEnv', () => {
 
     // An empty DATABASE_PATH (empty 1Password field) makes SQLite use a throwaway temporary
     // database: the service would run and silently lose everything.
-    it('rejects an empty DATABASE_PATH but lets the image default apply when unset', () => {
-      expect(() => validateEnv({ ...PROD, DATABASE_PATH: '' })).toThrow(
-        'DATABASE_PATH',
-      );
+    it('lets the image default apply when DATABASE_PATH is unset', () => {
       expect(() => validateEnv(PROD)).not.toThrow();
       expect(() =>
         validateEnv({ ...PROD, DATABASE_PATH: '/app/backend/data/f.sqlite' }),
@@ -62,6 +77,21 @@ describe('validateEnv', () => {
   });
 
   describe('in every environment', () => {
+    it('rejects an empty DATABASE_PATH', () => {
+      expect(() => validateEnv({ ...PROD, DATABASE_PATH: '' })).toThrow(
+        'DATABASE_PATH',
+      );
+      expect(() =>
+        validateEnv({ NODE_ENV: 'development', DATABASE_PATH: '' }),
+      ).toThrow('DATABASE_PATH');
+    });
+
+    it('accepts a numeric PORT', () => {
+      expect(() =>
+        validateEnv({ NODE_ENV: 'development', PORT: '3000' }),
+      ).not.toThrow();
+    });
+
     it.each(['-1', '1.5', 'one', ''])('rejects TRUST_PROXY_HOPS=%j', (hops) => {
       expect(() => validateEnv({ ...PROD, TRUST_PROXY_HOPS: hops })).toThrow(
         'TRUST_PROXY_HOPS',

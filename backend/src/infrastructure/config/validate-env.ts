@@ -21,6 +21,15 @@ export function validateEnv(
     assertCount(env.PORT, 'PORT', 1, 65_535);
   }
 
+  // Unset is fine (the image sets a default); empty would make SQLite use a throwaway database,
+  // in development as much as in production.
+  if (
+    env.DATABASE_PATH !== undefined &&
+    (typeof env.DATABASE_PATH !== 'string' || env.DATABASE_PATH.trim() === '')
+  ) {
+    throw new Error('DATABASE_PATH must not be empty');
+  }
+
   if (env.NODE_ENV !== 'production') {
     return env;
   }
@@ -31,13 +40,6 @@ export function validateEnv(
   }
   for (const variable of HTTPS_URLS_IN_PRODUCTION) {
     assertHttpsUrl(env[variable], variable);
-  }
-  // Unset is fine (the image sets a default); empty would make SQLite use a throwaway database.
-  if (
-    env.DATABASE_PATH !== undefined &&
-    (typeof env.DATABASE_PATH !== 'string' || env.DATABASE_PATH.trim() === '')
-  ) {
-    throw new Error('DATABASE_PATH must not be empty');
   }
   return env;
 }
