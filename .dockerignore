@@ -1,5 +1,9 @@
 **/node_modules
 **/dist
 **/coverage
-**/data/*.sqlite
+backend/data
 .git
+.env
+**/.env
+**/.env.*
+**/*.tsbuildinfo
