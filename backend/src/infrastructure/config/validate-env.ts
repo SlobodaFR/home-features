@@ -1,3 +1,9 @@
+/** Used outside production only, so local runs and tests need no setup. Rejected in production. */
+export const DEV_PSEUDONYM_SECRET =
+  'dev-only-pseudonym-secret-not-for-production';
+
+const MIN_SECRET_BYTES = 32;
+
 /** Variables the code cannot run without in production (read with getOrThrow). */
 const REQUIRED_IN_PRODUCTION = [
   'AUTH_CLIENT_ID',
@@ -30,8 +36,18 @@ export function validateEnv(
     throw new Error('DATABASE_PATH must not be empty');
   }
 
+  const secret =
+    typeof env.PSEUDONYM_SECRET === 'string' ? env.PSEUDONYM_SECRET : '';
   if (env.NODE_ENV !== 'production') {
-    return env;
+    return { ...env, PSEUDONYM_SECRET: secret || DEV_PSEUDONYM_SECRET };
+  }
+  if (
+    Buffer.byteLength(secret, 'utf8') < MIN_SECRET_BYTES ||
+    secret === DEV_PSEUDONYM_SECRET
+  ) {
+    throw new Error(
+      `PSEUDONYM_SECRET must be set in production to a random value of at least ${MIN_SECRET_BYTES.toString()} bytes (openssl rand -base64 48)`,
+    );
   }
   for (const variable of REQUIRED_IN_PRODUCTION) {
     if (typeof env[variable] !== 'string' || env[variable].trim() === '') {
