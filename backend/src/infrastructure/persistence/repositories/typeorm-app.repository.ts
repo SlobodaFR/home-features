@@ -22,6 +22,11 @@ export class TypeOrmAppRepository extends AppRepository {
     return rows.map(toDomain);
   }
 
+  async findAllBySlug(slug: string): Promise<App[]> {
+    const rows = await this.repository.find({ where: { slug } });
+    return rows.map(toDomain);
+  }
+
   async findById(id: string): Promise<App | null> {
     const row = await this.repository.findOne({ where: { id } });
     return row ? toDomain(row) : null;

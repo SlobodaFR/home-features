@@ -13,6 +13,9 @@ class InMemoryAppRepository extends AppRepository {
     return this.apps.find((app) => app.id === id) ?? null;
   }
 
+  async findAllBySlug(): Promise<App[]> {
+    return [];
+  }
   async findByNameOrSlug(
     userId: string,
     name: string,

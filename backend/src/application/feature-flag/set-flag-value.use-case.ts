@@ -40,13 +40,13 @@ export class SetFlagValueUseCase {
       throw new NotFoundException(`Environment ${environmentId} not found`);
     }
 
-    const saved = await this.changeFlagValue.execute(
+    const { value } = await this.changeFlagValue.execute(
       flag,
       environment,
       enabled,
       { name: user.name.trim() || user.id, identity: user.id, source: 'ui' },
     );
 
-    return toFlagValueDto(saved);
+    return toFlagValueDto(value);
   }
 }

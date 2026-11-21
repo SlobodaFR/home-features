@@ -143,8 +143,11 @@ import { PublicApiController } from '../controllers/public-api.controller';
     // Public exposure API
     GetFlagsAndConfigsUseCase,
   ],
-  // For API-key routes in other modules (ApiKeyGuard, OFREP): one shared WriteDebouncer.
+  // For OFREP (ApiKeyGuard, one shared WriteDebouncer) and the emergency CLI.
   exports: [
+    AppRepository,
+    EnvironmentRepository,
+    ChangeFlagValueService,
     AuthenticateApiKeyUseCase,
     RecordFlagEvaluationsUseCase,
     FeatureFlagRepository,
