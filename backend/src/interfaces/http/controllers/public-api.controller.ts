@@ -37,9 +37,6 @@ function extractBearerToken(header: string | undefined): string | null {
   if (!header) {
     return null;
   }
-  const [scheme, token] = header.split(' ');
-  if (scheme.toLowerCase() !== 'bearer' || !token) {
-    return null;
-  }
-  return token;
+  const match = /^Bearer ([^\s]+)$/i.exec(header);
+  return match ? match[1] : null;
 }
