@@ -13,6 +13,8 @@ export function toFeatureFlagDto(flag: FeatureFlag): FeatureFlagDto {
     key: flag.key,
     name: flag.name,
     description: flag.description,
+    clientExposed: flag.clientExposed,
+    lastEvaluatedAt: flag.lastEvaluatedAt?.toISOString() ?? null,
     createdAt: flag.createdAt.toISOString(),
   };
 }

@@ -57,6 +57,14 @@ export interface SaveFeatureFlagPayload {
   key: string;
   name: string;
   description?: string | null;
+  clientExposed?: boolean;
+}
+
+/** The key cannot change: omit it. */
+export interface UpdateFeatureFlagPayload {
+  name?: string;
+  description?: string | null;
+  clientExposed?: boolean;
 }
 
 export interface SaveConfigEntryPayload {
@@ -157,13 +165,18 @@ export const apiClient = {
   },
   async updateFeatureFlag(
     id: string,
-    payload: SaveFeatureFlagPayload,
+    payload: UpdateFeatureFlagPayload,
   ): Promise<FeatureFlagWithValues> {
     const response = await sendJson(`/flags/${id}`, 'PATCH', payload);
     return response.json() as Promise<FeatureFlagWithValues>;
   },
-  async deleteFeatureFlag(id: string): Promise<void> {
-    await sendJson(`/flags/${id}`, 'DELETE', undefined);
+  /** `confirm` (the flag key) is required by the server when the flag is on somewhere. */
+  async deleteFeatureFlag(id: string, confirm?: string): Promise<void> {
+    await sendJson(
+      `/flags/${id}`,
+      'DELETE',
+      confirm === undefined ? undefined : { confirm },
+    );
   },
   async setFlagValue(
     flagId: string,

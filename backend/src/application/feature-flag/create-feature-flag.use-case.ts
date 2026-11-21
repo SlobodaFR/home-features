@@ -41,6 +41,8 @@ export class CreateFeatureFlagUseCase {
         key: input.key,
         name: input.name,
         description: input.description,
+        clientExposed: input.clientExposed ?? false,
+        lastEvaluatedAt: null,
         createdAt: new Date(),
       });
     } catch (error) {

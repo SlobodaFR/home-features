@@ -1,14 +1,10 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { AppRepository } from '../../domain/app/app.repository';
 import { FeatureFlag } from '../../domain/feature-flag/feature-flag';
 import { FeatureFlagRepository } from '../../domain/feature-flag/feature-flag.repository';
 import { assertFeatureFlagOwnership } from './assert-feature-flag-ownership';
 import { FeatureFlagDto } from './feature-flag.dto';
-import { FeatureFlagInput } from './feature-flag-input.dto';
+import { FeatureFlagUpdate } from './feature-flag-input.dto';
 import { toFeatureFlagDto } from './to-feature-flag-dto';
 
 @Injectable()
@@ -20,7 +16,7 @@ export class UpdateFeatureFlagUseCase {
 
   async execute(
     id: string,
-    input: FeatureFlagInput,
+    input: FeatureFlagUpdate,
     userId: string,
   ): Promise<FeatureFlagDto> {
     const existing = await assertFeatureFlagOwnership(
@@ -30,25 +26,19 @@ export class UpdateFeatureFlagUseCase {
       userId,
     );
 
-    const conflict = await this.flagRepository.findByKey(
-      existing.appId,
-      input.key,
-    );
-    if (conflict && conflict.id !== id) {
-      throw new ConflictException(
-        'A feature flag with this key already exists for this app',
+    // Consumers reference the key in code: a rename would silently send them to their defaults.
+    if (input.key !== undefined && input.key !== existing.key) {
+      throw new BadRequestException(
+        'A feature flag key cannot be changed: create a new flag instead',
       );
     }
 
     let flag: FeatureFlag;
     try {
-      flag = FeatureFlag.create({
-        id: existing.id,
-        appId: existing.appId,
-        key: input.key,
+      flag = existing.withDetails({
         name: input.name,
         description: input.description,
-        createdAt: existing.createdAt,
+        clientExposed: input.clientExposed,
       });
     } catch (error) {
       throw new BadRequestException(

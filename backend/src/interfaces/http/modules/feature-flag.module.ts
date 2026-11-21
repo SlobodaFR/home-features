@@ -21,6 +21,7 @@ import { ReorderEnvironmentsUseCase } from '../../../application/environment/reo
 import { UpdateEnvironmentUseCase } from '../../../application/environment/update-environment.use-case';
 import { CreateFeatureFlagUseCase } from '../../../application/feature-flag/create-feature-flag.use-case';
 import { DeleteFeatureFlagUseCase } from '../../../application/feature-flag/delete-feature-flag.use-case';
+import { RecordFlagEvaluationsUseCase } from '../../../application/feature-flag/record-flag-evaluations.use-case';
 import { ListFeatureFlagsUseCase } from '../../../application/feature-flag/list-feature-flags.use-case';
 import { SetFlagValueUseCase } from '../../../application/feature-flag/set-flag-value.use-case';
 import { UpdateFeatureFlagUseCase } from '../../../application/feature-flag/update-feature-flag.use-case';
@@ -109,6 +110,7 @@ import { PublicApiController } from '../controllers/public-api.controller';
     UpdateFeatureFlagUseCase,
     DeleteFeatureFlagUseCase,
     SetFlagValueUseCase,
+    RecordFlagEvaluationsUseCase,
     // ConfigEntry
     ListConfigEntriesUseCase,
     CreateConfigEntryUseCase,

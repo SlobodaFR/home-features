@@ -117,3 +117,15 @@ Management of API keys (list / create / revoke) requires an authenticated sessio
 
 A single App can have multiple API keys (e.g. one per environment and consuming service),
 each independently revocable.
+
+## Flag lifecycle (management API)
+
+- A flag's `key` is **immutable**: consumers reference it in code, so `PATCH /api/flags/:id`
+  refuses a different `key` (`400`); `name`, `description` and `clientExposed` can change.
+- `clientExposed` (default `false`) makes a flag visible to `web` keys. Leave it off for
+  anything a browser must not learn.
+- `lastEvaluatedAt` is the last time a consumer read the flag (updated at most every ten
+  minutes); the UI shows it.
+- `DELETE /api/flags/:id` on a flag that is on in at least one environment is refused (`409`)
+  unless the body confirms it by naming the key: `{ "confirm": "<key>" }`. Its consumers would
+  fall back to their code default, i.e. the feature turns off.
