@@ -10,6 +10,7 @@ import { serveStaticOptions } from './static-assets';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
 import { SameOriginGuard } from './interfaces/http/guards/same-origin.guard';
 import { AuthModule } from './interfaces/http/modules/auth.module';
+import { HealthModule } from './interfaces/http/modules/health.module';
 import { FeatureFlagModule } from './interfaces/http/modules/feature-flag.module';
 import { MeModule } from './interfaces/http/modules/me.module';
 
@@ -30,6 +31,7 @@ import { MeModule } from './interfaces/http/modules/me.module';
     AuthModule,
     MeModule,
     FeatureFlagModule,
+    HealthModule,
   ],
   // CSRF: every cookie-authenticated mutation must come from this origin (@SkipSameOrigin opts out).
   providers: [{ provide: APP_GUARD, useClass: SameOriginGuard }],

@@ -21,7 +21,8 @@ export const REDACT_PATHS = [
   '*.refresh_token',
 ];
 
-const QUIET_PATHS = [/^\/assets\//, /^\/healthz\/?$/];
+// Express routing is case-insensitive: so are these.
+const QUIET_PATHS = [/^\/assets\//i, /^\/healthz\/?$/i];
 
 function pathOf(url: string | undefined): string {
   return (url ?? '').split('?')[0];

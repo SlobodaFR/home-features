@@ -17,6 +17,14 @@ class ApiStub {
 }
 
 // Même option d'exclusion que AppModule : syntaxe Express 5 (path-to-regexp 8).
+@Controller('healthz')
+class HealthStub {
+  @Get()
+  health() {
+    return { status: 'ok' };
+  }
+}
+
 describe('SPA fallback (ServeStatic, Express 5)', () => {
   let root: string;
   let app: NestExpressApplication;
@@ -27,7 +35,7 @@ describe('SPA fallback (ServeStatic, Express 5)', () => {
 
     @Module({
       imports: [ServeStaticModule.forRoot(serveStaticOptions(root))],
-      controllers: [ApiStub],
+      controllers: [ApiStub, HealthStub],
     })
     class TestModule {}
 
@@ -57,5 +65,14 @@ describe('SPA fallback (ServeStatic, Express 5)', () => {
   it('answers 404 on an unknown API route instead of the SPA', async () => {
     const response = await request(app.getHttpServer()).get('/api/unknown');
     expect(response.status).toBe(404);
+  });
+
+  it('leaves /healthz to its controller and 404s its sub-paths instead of the SPA', async () => {
+    const health = await request(app.getHttpServer()).get('/healthz');
+    expect(health.body).toEqual({ status: 'ok' });
+
+    const sub = await request(app.getHttpServer()).get('/healthz/unknown');
+    expect(sub.status).toBe(404);
+    expect(sub.text).not.toContain('SPA');
   });
 });

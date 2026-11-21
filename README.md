@@ -70,6 +70,12 @@ This is the same auth integration pattern as the sibling app
 Copy `backend/.env.example` to `backend/.env` and fill in the values. This file is read
 automatically by `ConfigModule` in dev, and can also be passed to `docker run --env-file`.
 
+## Health check
+
+`GET /healthz` (outside the `api` prefix, no session) returns `{ "status": "ok", "runtime": ... }` with
+event-loop and memory samples. It is internal: Caddy answers 404 for `/healthz*`, the Docker
+`HEALTHCHECK` calls it inside the container, and on the VPS use `curl 127.0.0.1:3002/healthz`.
+
 ## Development
 
 ```bash
