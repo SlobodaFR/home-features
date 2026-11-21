@@ -7,6 +7,10 @@ and one environment.
 It is separate from the OAuth2-session-based management API used by the admin UI —
 no cookies, no login flow. Just an opaque bearer token.
 
+For boolean feature flags, prefer the OpenFeature-compatible OFREP endpoints
+([ofrep.md](ofrep.md)), which consumers use through the official OpenFeature SDKs. This endpoint
+remains for configs.
+
 ## Authentication
 
 Generate an API key from the app's detail page in the Kinetic Feature Management UI
@@ -78,10 +82,11 @@ A `web` key receives only the client-exposed flags and an empty `configs` object
 
 **Error responses**
 
-| Status             | When                                                                         |
-| ------------------ | ---------------------------------------------------------------------------- |
-| `400 Bad Request`  | `environment` is missing or is not the environment the key is bound to.      |
-| `401 Unauthorized` | Missing/malformed `Authorization` header, or the API key is unknown/revoked. |
+| Status                  | When                                                                                           |
+| ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `400 Bad Request`       | `environment` is missing or is not the environment the key is bound to.                        |
+| `401 Unauthorized`      | Missing/malformed `Authorization` header, or the API key is unknown/revoked.                   |
+| `429 Too Many Requests` | Over 100 requests per minute from the same IP (`Retry-After` in seconds; Nest's default body). |
 
 ## Side effects
 
