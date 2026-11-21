@@ -2,7 +2,9 @@ import type { Database } from 'better-sqlite3';
 import { DataSource } from 'typeorm';
 import type { BetterSqlite3Driver } from 'typeorm/driver/better-sqlite3/BetterSqlite3Driver';
 
-const MAX_WAIT_TICKS = 10_000;
+// Bounded by time, not by event-loop turns: a turn lasts microseconds on a fast machine, so a
+// turn count would give up long before a legitimate transaction (a few ms) has finished.
+const MAX_WAIT_MS = 5_000;
 
 /**
  * Runs `work` as one synchronous better-sqlite3 transaction.
@@ -20,11 +22,16 @@ export async function runSqliteTransaction<T>(
 ): Promise<T> {
   const db = (dataSource.driver as BetterSqlite3Driver)
     .databaseConnection as Database;
-  for (let tick = 0; db.inTransaction; tick += 1) {
-    if (tick >= MAX_WAIT_TICKS) {
+  const deadline = performance.now() + MAX_WAIT_MS;
+  for (let turn = 0; db.inTransaction; turn += 1) {
+    if (performance.now() >= deadline) {
       throw new Error('The database stayed inside another transaction');
     }
-    await new Promise((resolve) => setImmediate(resolve));
+    // Yield on the next turn at first (TypeORM transactions last a few ms), then back off to 1 ms
+    // so a leaked transaction does not turn every waiter into a hot loop for MAX_WAIT_MS.
+    await new Promise((resolve) =>
+      turn < 100 ? setImmediate(resolve) : setTimeout(resolve, 1),
+    );
   }
   return db.transaction(() => work(db))();
 }
