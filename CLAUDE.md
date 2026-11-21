@@ -2,14 +2,16 @@
 
 Feature flags and config management service, deployed at `features.sloboda.fr` on the same VPS as
 the other `home-*` services. Users sign in through the central auth service (`home-auth`,
-`auth.sloboda.fr`); other services read flags and configs through a public API authenticated with a
-per-app API key (`docs/public-api.md`).
+`auth.sloboda.fr`). Other services evaluate flags through an OpenFeature provider speaking OFREP
+0.4.0 (`docs/ofrep.md`; home-features is the OFREP server) and read configs through the legacy public API (`docs/public-api.md`), both with
+an API key bound to one app, one environment and a scope.
 
 ## Stack
 
 - **Backend**: NestJS 12 + Express 5, TypeORM + better-sqlite3 (WAL mode, replicated by Litestream),
   class-validator / class-transformer, cookie-parser, jose (JWKS), @nestjs/config,
-  @nestjs/serve-static, helmet, nestjs-pino. TypeScript 7, compiled by `tsc -p tsconfig.build.json`
+  @nestjs/serve-static, @nestjs/throttler, helmet, nestjs-pino. OpenFeature SDKs and OFREP providers
+  are devDependencies (contract tests only). TypeScript 7, compiled by `tsc -p tsconfig.build.json`
   (no Nest CLI). Clean architecture: `domain / application / infrastructure / interfaces`.
 - **Frontend**: Vite + React 18 + TypeScript + Tailwind CSS, react-router-dom. Clean architecture:
   `domain / application / infrastructure / presentation`.
@@ -26,20 +28,26 @@ backend/src/
   domain/                      # entities and ports, no framework: app, environment, feature-flag,
                                # config-entry, api-key, user, auth, shared (slug, pseudonymize)
   application/                 # use cases and DTOs, one folder per aggregate (app, environment,
-                               # feature-flag, config-entry, api-key, overview, public-api, auth)
+                               # feature-flag, config-entry, api-key, overview, public-api, ofrep,
+                               # auth); shared/WriteDebouncer (usage timestamps, 10 min)
   infrastructure/
     auth/                      # HttpOAuthClient, JwksAccessTokenVerifier
     config/                    # validateEnv (environment validated at startup)
-    logging/                   # nestjs-pino config: serializers, redaction, whitelist err serializer
+    logging/                   # nestjs-pino config: serializers, redaction, whitelist err serializer;
+                               # PinoFlagAuditLog (flag_value_changed line)
     observability/             # RuntimeHealthMonitor (event-loop lag, memory) for /healthz
     persistence/               # ORM entities (entities/index.ts = ENTITIES), repositories,
-                               # migrations/ (MIGRATIONS), SchemaGuard, DatabaseModule, data-source.ts
+                               # migrations/ (MIGRATIONS), SchemaGuard, DatabaseModule, data-source.ts,
+                               # sqlite-transaction.ts (synchronous transactions, see Database)
   interfaces/http/
     controllers/               # apps, environments, flags, configs, api-keys, auth, me, health,
                                # public-api
-    guards/                    # JwtAuthGuard (global), SameOriginGuard (global)
+    ofrep/                     # OfrepController, OfrepExceptionFilter, raw body reader
+    guards/                    # JwtAuthGuard (global), SameOriginGuard (global), ApiKeyGuard (OFREP)
     decorators/                # @Public, @SkipSameOrigin, @CurrentUser
-    modules/, dto/, security-headers.ts, auth-cookies.ts, auth-session.ts
+    modules/, dto/, throttling.ts, security-headers.ts, auth-cookies.ts, auth-session.ts
+  cli/                         # set-flag emergency CLI (createApplicationContext, no HTTP)
+  test-support/                # test-only modules and fixtures (excluded from the build)
   app.module.ts, main.ts, configure-app.ts, static-assets.ts
 
 frontend/src/
@@ -47,8 +55,10 @@ frontend/src/
 ```
 
 Domain model: an `App` (owned by a user) has `Environment`s, `FeatureFlag`s (boolean per
-environment), `ConfigEntry`s (STRING / NUMBER / BOOLEAN / JSON value per environment) and
-`ApiKey`s (hashed, shown once at creation).
+environment; immutable key, `clientExposed`, `lastEvaluatedAt`), `ConfigEntry`s (STRING / NUMBER /
+BOOLEAN / JSON value per environment) and `ApiKey`s (`hf_` + 64 hex, sha256 stored, shown once;
+bound to one environment and a scope `server` | `web`; `lastUsedAt`). Every flag value change is
+appended to `flag_value_changes` (old, new, actor, source `ui` | `cli`) in the value's transaction.
 
 ## HTTP surface and security
 
@@ -57,13 +67,24 @@ environment), `ConfigEntry`s (STRING / NUMBER / BOOLEAN / JSON value per environ
   home-auth; `JwtAuthGuard` is global and verifies the access token against the JWKS, refreshing
   the session when needed. `@Public()` opts a route out. `POST /api/auth/disconnect?secret=...` is
   the logout webhook called by home-auth.
-- **Public API**: `GET /api/v1/flags-and-configs?environment=<slug>`, `Authorization: Bearer <api key>`,
-  no cookie (`docs/public-api.md`).
+- **OFREP** (`docs/ofrep.md`): `POST /api/ofrep/v1/evaluate/flags/{key}` and `/flags` (bulk, strong
+  ETag over the environment id and the sorted `key=on|off|unset` lines, manual `304`, `Cache-Control: private,
+  no-cache`). `@Public`, `@SkipSameOrigin`, `@SkipThrottle`, `ApiKeyGuard` (bearer only, never a
+  cookie), OFREP-shaped errors through a controller-scoped filter; `/api/ofrep` bodies are read
+  before Nest's JSON parser so malformed JSON still gets an OFREP error. The environment is the
+  key's; the context is ignored and never logged; a `web` key only sees client-exposed flags.
+- **Public API**: `GET /api/v1/flags-and-configs?environment=<slug>` (must be the key's environment,
+  `400` otherwise), `Authorization: Bearer <api key>`, no cookie (`docs/public-api.md`).
+- **Rate limiting** (`throttling.ts`): global `ThrottlerGuard`, 100 req/min per route and per IP;
+  `/healthz` skipped; OFREP: 300/min per key after authentication, 20 failed authentications/min
+  per IP. Every 429 carries `Retry-After` (seconds). All VPS services share one egress IP: never
+  reject a valid key because of its IP.
 - **CSRF**: `SameOriginGuard` is global; every mutation needs `Sec-Fetch-Site: same-origin` (or a
   trusted `Origin` = `FRONTEND_URL`) and a body that is not `application/x-www-form-urlencoded` or `text/plain`. `@SkipSameOrigin()` exempts server-to-server
-  routes; today only `POST /api/auth/disconnect` and `PublicApiController`. A spec lists the exact set.
-- **CORS**: none. The SPA is served by this service (same origin); the public API is called
-  server-to-server.
+  routes; today only `POST /api/auth/disconnect`, `PublicApiController` and `OfrepController`. A
+  spec lists the exact set.
+- **CORS**: none. The SPA is served by this service (same origin); OFREP and the public API are
+  called server-to-server (a consumer's browser goes through its own same-origin proxy).
 - **Headers**: helmet with a CSP limited to what the front loads (own scripts and styles, Google
   Fonts) and HSTS.
 - **Proxy**: `TRUST_PROXY_HOPS=1` behind Caddy so `req.ip` is the real client.
@@ -83,6 +104,17 @@ entity change needs a new migration appended to `MIGRATIONS`
 (`migrations/index.ts`); the migrations spec fails when entities and migrations diverge, and
 `SchemaGuard` refuses to start when the live schema differs from the entities. Never re-enable
 `synchronize`, never rebuild a table destructively (Litestream would replicate it).
+
+- Schema changes are `ALTER TABLE ADD COLUMN` or new tables, hand-written. The migrations spec
+  compares the structure (PRAGMA table_info / index_list / foreign_key_list) with what
+  `synchronize` would create, and replays an upgrade from today's production schema. TypeORM
+  reads SQLite foreign-key names from the stored DDL in the `CONSTRAINT "x" FOREIGN KEY` form only,
+  so an FK added by `ADD COLUMN` carries that text in an SQL comment (see `ApiKeyEnvironment`).
+- `flag_value_changes` is append-only (triggers refuse UPDATE and DELETE) and has no foreign keys.
+- TypeORM's better-sqlite3 driver shares one connection and does not serialize its async
+  transactions: concurrent requests interleave inside them. Writes that must be atomic go through
+  `runSqliteTransaction` (synchronous `BEGIN IMMEDIATE` transaction, waits for any open one);
+  `FlagValueRepository.upsertRecordingChange` is the only way to set a flag value.
 
 ```bash
 npm run migration:generate -w backend -- src/infrastructure/persistence/migrations/<Name>  # review it, then append it to MIGRATIONS
@@ -110,6 +142,23 @@ cp backend/.env.example backend/.env   # fill in AUTH_CLIENT_SECRET, AUTH_WEBHOO
 npm run dev:backend    # tsc once, then node --watch on dist (re-run after editing sources), :3002
 npm run dev:frontend   # Vite on :5173, proxies /api to :3002
 ```
+
+## Emergency CLI
+
+`docker compose exec features node dist/cli/set-flag.js --app <slug> --env <slug> --flag <key>
+--enabled true|false [--actor <name>]` (`docs/cli.md`): same validation, database and
+`ChangeFlagValueService` as the UI (journal source `cli`). Exit 0 done, 1 refused (unknown or
+ambiguous target), 2 usage, 3 failure. `npm run cli:set-flag -w backend -- ...` locally.
+
+## Consumers
+
+The reference consumer adapter is in home-auth (SlobodaFR/home-auth#86,
+`backend/src/infrastructure/feature-flags/`): `FeatureFlags.isEnabled(key, codeDefault)` over
+`@openfeature/server-sdk` + `@openfeature/ofrep-provider`, `setProvider` (never `AndWait`),
+`timeoutMs` 500, memo 30 s, last-known value, `FEATURES_PIN_<FLAG_KEY_IN_UPPER_SNAKE_CASE>` emergency
+pins (`new-ui` → `FEATURES_PIN_NEW_UI`),
+`FEATURES_OFREP_URL` / `FEATURES_API_KEY` optional (no-op without them). Any change to the OFREP
+responses must keep `ofrep.contract.spec.ts` (the real SDKs) green.
 
 ## Tests and build
 
