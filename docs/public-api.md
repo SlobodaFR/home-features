@@ -97,10 +97,15 @@ curl -s "https://features.sloboda.fr/api/v1/flags-and-configs?environment=produc
 
 ## Rate limiting
 
-There is currently no rate limiting or abuse prevention on this endpoint
-(no NestJS throttler is configured in this app, and none was found in the sibling
-`home-budget` / `home-auth` services to mirror). This is a known follow-up — consider
-adding `@nestjs/throttler` if this endpoint sees meaningful external traffic.
+`@nestjs/throttler`, in memory (counters reset on restart), one-minute windows, client IP taken
+from `req.ip` through `TRUST_PROXY_HOPS` (1 behind Caddy), IPv6 grouped by /64. Every `429`
+carries `Retry-After` in seconds.
+
+- Every route, this one included: 100 requests per minute per route and per client IP.
+- API-key routes (OFREP): authenticated first, then 300 requests per minute **per key** (all the
+  services of the VPS share one IP); failed authentications are limited to 20 per minute per
+  client IP, then `429` (random bearers do not get fresh budgets; a valid key still passes).
+- `/healthz` is never limited.
 
 ## Managing API keys
 
