@@ -31,6 +31,7 @@ export class AppFlagsController {
         key: dto.key,
         name: dto.name,
         description: dto.description ?? null,
+        clientExposed: dto.clientExposed,
       },
       user.id,
     );
