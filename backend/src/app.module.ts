@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { join } from 'path';
 import { validateEnv } from './infrastructure/config/validate-env';
@@ -13,6 +14,7 @@ import { AuthModule } from './interfaces/http/modules/auth.module';
 import { HealthModule } from './interfaces/http/modules/health.module';
 import { FeatureFlagModule } from './interfaces/http/modules/feature-flag.module';
 import { MeModule } from './interfaces/http/modules/me.module';
+import { throttlerOptions } from './interfaces/http/throttling';
 
 @Module({
   imports: [
@@ -26,6 +28,7 @@ import { MeModule } from './interfaces/http/modules/me.module';
           config.getOrThrow<string>('PSEUDONYM_SECRET'),
         ),
     }),
+    ThrottlerModule.forRoot(throttlerOptions),
     DatabaseModule,
     ServeStaticModule.forRoot(serveStaticOptions(join(__dirname, 'public'))),
     AuthModule,
@@ -33,7 +36,11 @@ import { MeModule } from './interfaces/http/modules/me.module';
     FeatureFlagModule,
     HealthModule,
   ],
-  // CSRF: every cookie-authenticated mutation must come from this origin (@SkipSameOrigin opts out).
-  providers: [{ provide: APP_GUARD, useClass: SameOriginGuard }],
+  providers: [
+    // Rate limit first, before any session or JWKS work (@SkipThrottle opts out).
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // CSRF: every cookie-authenticated mutation must come from this origin (@SkipSameOrigin opts out).
+    { provide: APP_GUARD, useClass: SameOriginGuard },
+  ],
 })
 export class AppModule {}
