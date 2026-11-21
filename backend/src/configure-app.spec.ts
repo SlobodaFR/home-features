@@ -42,6 +42,18 @@ describe('configureApp', () => {
     await app.close();
   });
 
+  it('applies the security headers to every response', async () => {
+    const app = await appWith({});
+
+    const res = await request(app.getHttpServer()).get('/api/probe');
+
+    expect(res.headers['content-security-policy']).toContain(
+      "default-src 'self'",
+    );
+    expect(res.headers['strict-transport-security']).toContain('max-age=');
+    await app.close();
+  });
+
   it('does not answer a CORS preflight with permissions', async () => {
     const app = await appWith({});
 

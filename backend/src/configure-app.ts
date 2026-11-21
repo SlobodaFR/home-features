@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { applySecurityHeaders } from './interfaces/http/security-headers';
 
 /**
  * HTTP setup shared by main.ts and the tests. There is deliberately no CORS: the SPA is served by
@@ -10,6 +11,8 @@ export function configureApp(
   app: NestExpressApplication,
   env: Record<string, string | undefined> = process.env,
 ): void {
+  // First middleware: every response (API, SPA files, errors) gets the security headers.
+  applySecurityHeaders(app);
   // Number of reverse-proxy hops to trust for X-Forwarded-For (req.ip). Production: 1 (Caddy,
   // which drops client-sent X-Forwarded-For since no trusted_proxies is configured). Unset in
   // local dev, otherwise any client could spoof its IP.
