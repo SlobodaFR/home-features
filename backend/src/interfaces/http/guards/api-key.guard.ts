@@ -39,6 +39,10 @@ export class TooManyRequestsException extends HttpException {
  *    budget. Failed: counted per client IP (20/min, then 429): an attacker cannot get a fresh
  *    bucket by sending random bearers. A valid key is never refused because of others' failures.
  * 3. Every 429 carries Retry-After in seconds.
+ *
+ * A blocked IP still pays the format check and one indexed lookup before its 429: that is the
+ * price of "authenticate first, a valid key always passes". Do not reject blocked IPs before
+ * authenticating, it would lock out every service sharing the VPS egress IP.
  */
 @Injectable()
 export class ApiKeyGuard implements CanActivate {

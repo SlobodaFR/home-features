@@ -18,6 +18,7 @@ import { AuthController } from '../controllers/auth.controller';
 import { AuthModule } from '../modules/auth.module';
 import { FeatureFlagModule } from '../modules/feature-flag.module';
 import { MeModule } from '../modules/me.module';
+import { OfrepModule } from '../modules/ofrep.module';
 import { PublicApiController } from '../controllers/public-api.controller';
 import { SameOriginGuard } from './same-origin.guard';
 
@@ -261,8 +262,13 @@ describe('same-origin wiring of the real application', () => {
   });
 
   // Adding @SkipSameOrigin() anywhere else would silently open a cookie route to CSRF.
-  it('exempts exactly the webhook and the public API across every controller', () => {
-    const controllers = [AuthModule, FeatureFlagModule, MeModule].flatMap(
+  it('exempts exactly the webhook, the public API and OFREP across every controller', () => {
+    const controllers = [
+      AuthModule,
+      FeatureFlagModule,
+      MeModule,
+      OfrepModule,
+    ].flatMap(
       (module) =>
         Reflect.getMetadata('controllers', module) as (new () => object)[],
     );
@@ -287,6 +293,7 @@ describe('same-origin wiring of the real application', () => {
 
     expect(exempt.toSorted()).toEqual([
       'AuthController.disconnect',
+      'OfrepController',
       'PublicApiController',
     ]);
   });

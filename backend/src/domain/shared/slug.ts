@@ -17,6 +17,10 @@ export class Slug {
     return new Slug(value);
   }
 
+  static isValid(value: string): boolean {
+    return SLUG_PATTERN.test(value);
+  }
+
   toString(): string {
     return this.value;
   }
