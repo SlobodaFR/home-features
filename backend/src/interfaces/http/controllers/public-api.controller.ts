@@ -7,8 +7,11 @@ import {
 } from '@nestjs/common';
 import { GetFlagsAndConfigsUseCase } from '../../../application/public-api/get-flags-and-configs.use-case';
 import { Public } from '../decorators/public.decorator';
+import { SkipSameOrigin } from '../decorators/skip-same-origin.decorator';
 import { FlagsAndConfigsQueryDto } from '../dto/flags-and-configs-query.dto';
 
+// Bearer API key, no cookie: called by other services, never by a browser session.
+@SkipSameOrigin()
 @Controller('v1')
 export class PublicApiController {
   constructor(private readonly getFlagsAndConfigs: GetFlagsAndConfigsUseCase) {}
