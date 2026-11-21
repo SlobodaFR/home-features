@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { LoggerModule } from 'nestjs-pino';
 import { join } from 'path';
 import { validateEnv } from './infrastructure/config/validate-env';
+import { loggerParams } from './infrastructure/logging/logger.config';
 import { serveStaticOptions } from './static-assets';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
 import { SameOriginGuard } from './interfaces/http/guards/same-origin.guard';
@@ -14,6 +16,15 @@ import { MeModule } from './interfaces/http/modules/me.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        // validateEnv guarantees PSEUDONYM_SECRET (a development fallback outside production).
+        loggerParams(
+          config.get<string>('NODE_ENV'),
+          config.getOrThrow<string>('PSEUDONYM_SECRET'),
+        ),
+    }),
     DatabaseModule,
     ServeStaticModule.forRoot(serveStaticOptions(join(__dirname, 'public'))),
     AuthModule,
