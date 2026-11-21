@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, Fragment, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useApiKeys } from '../../application/use-api-keys';
 import { useAppOverview } from '../../application/use-app-overview';
@@ -15,6 +15,10 @@ import {
   FeatureFlagWithValues,
   lastEvaluatedLabel,
 } from '../../domain/feature-flag';
+import {
+  describeChange,
+  FlagValueChange,
+} from '../../domain/flag-value-change';
 import { slugify } from '../../domain/slugify';
 import { apiClient } from '../../infrastructure/api-client';
 
@@ -34,6 +38,11 @@ export function AppDetailPage() {
   const [configType, setConfigType] = useState<ConfigValueType>(
     ConfigValueType.STRING,
   );
+
+  const [history, setHistory] = useState<{
+    flagId: string;
+    changes: FlagValueChange[];
+  } | null>(null);
 
   const [apiKeyName, setApiKeyName] = useState('');
   const [apiKeyEnvironmentId, setApiKeyEnvironmentId] = useState('');
@@ -149,6 +158,22 @@ export function AppDetailPage() {
     await refresh();
   }
 
+  async function loadHistory(flagId: string) {
+    setHistory({ flagId, changes: await apiClient.fetchFlagHistory(flagId) });
+  }
+
+  async function handleToggleHistory(flagId: string) {
+    if (history?.flagId === flagId) {
+      setHistory(null);
+      return;
+    }
+    try {
+      await loadHistory(flagId);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Failed to load');
+    }
+  }
+
   async function handleToggleFlag(
     flagId: string,
     environmentId: string,
@@ -156,6 +181,9 @@ export function AppDetailPage() {
   ) {
     await apiClient.setFlagValue(flagId, environmentId, enabled);
     await refresh();
+    if (history?.flagId === flagId) {
+      await loadHistory(flagId);
+    }
   }
 
   async function handleCreateConfig(event: FormEvent) {
@@ -317,58 +345,88 @@ export function AppDetailPage() {
             </thead>
             <tbody>
               {flags.map((flag) => (
-                <tr key={flag.id} className="border-t border-hairline">
-                  <td className="py-sm">
-                    <div className="font-body-md text-body-md text-ink">
-                      {flag.name}
-                    </div>
-                    <div className="font-body-sm text-body-sm text-mute">
-                      {flag.key}
-                    </div>
-                    <div className="font-body-sm text-body-sm text-mute">
-                      {lastEvaluatedLabel(flag.lastEvaluatedAt)}
-                    </div>
-                  </td>
-                  {environments.map((env) => {
-                    const value = flag.values.find(
-                      (v) => v.environmentId === env.id,
-                    );
-                    return (
-                      <td key={env.id} className="py-sm px-md">
-                        <input
-                          type="checkbox"
-                          checked={value?.enabled ?? false}
-                          onChange={(e) =>
-                            void handleToggleFlag(
-                              flag.id,
-                              env.id,
-                              e.target.checked,
-                            )
-                          }
-                        />
+                <Fragment key={flag.id}>
+                  <tr className="border-t border-hairline">
+                    <td className="py-sm">
+                      <div className="font-body-md text-body-md text-ink">
+                        {flag.name}
+                      </div>
+                      <div className="font-body-sm text-body-sm text-mute">
+                        {flag.key}
+                      </div>
+                      <div className="font-body-sm text-body-sm text-mute">
+                        {lastEvaluatedLabel(flag.lastEvaluatedAt)}
+                      </div>
+                    </td>
+                    {environments.map((env) => {
+                      const value = flag.values.find(
+                        (v) => v.environmentId === env.id,
+                      );
+                      return (
+                        <td key={env.id} className="py-sm px-md">
+                          <input
+                            type="checkbox"
+                            checked={value?.enabled ?? false}
+                            onChange={(e) =>
+                              void handleToggleFlag(
+                                flag.id,
+                                env.id,
+                                e.target.checked,
+                              )
+                            }
+                          />
+                        </td>
+                      );
+                    })}
+                    <td className="py-sm px-md">
+                      <input
+                        type="checkbox"
+                        aria-label={`Expose ${flag.key} to web keys`}
+                        checked={flag.clientExposed}
+                        onChange={(e) =>
+                          void handleToggleClientExposed(flag, e.target.checked)
+                        }
+                      />
+                    </td>
+                    <td className="py-sm whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => void handleToggleHistory(flag.id)}
+                        className="font-label-caps text-label-caps text-mute border-b border-mute uppercase mr-md"
+                      >
+                        History
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteFlag(flag)}
+                        className="font-label-caps text-label-caps text-error border-b border-error uppercase"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                  {history?.flagId === flag.id && (
+                    <tr>
+                      <td
+                        colSpan={environments.length + 3}
+                        className="pb-md font-body-sm text-body-sm text-mute"
+                      >
+                        {history.changes.length === 0 ? (
+                          'No value change recorded yet.'
+                        ) : (
+                          <ul>
+                            {history.changes.map((change) => (
+                              <li key={change.id}>
+                                {new Date(change.at).toLocaleString()} —{' '}
+                                {describeChange(change, environments)}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </td>
-                    );
-                  })}
-                  <td className="py-sm px-md">
-                    <input
-                      type="checkbox"
-                      aria-label={`Expose ${flag.key} to web keys`}
-                      checked={flag.clientExposed}
-                      onChange={(e) =>
-                        void handleToggleClientExposed(flag, e.target.checked)
-                      }
-                    />
-                  </td>
-                  <td className="py-sm">
-                    <button
-                      type="button"
-                      onClick={() => void handleDeleteFlag(flag)}
-                      className="font-label-caps text-label-caps text-error border-b border-error uppercase"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>

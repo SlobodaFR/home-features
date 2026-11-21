@@ -129,3 +129,15 @@ each independently revocable.
 - `DELETE /api/flags/:id` on a flag that is on in at least one environment is refused (`409`)
   unless the body confirms it by naming the key: `{ "confirm": "<key>" }`. Its consumers would
   fall back to their code default, i.e. the feature turns off.
+- Every change of a flag value (UI, and the emergency CLI) is appended to the
+  `flag_value_changes` journal in the same transaction as the value itself (old value, `null`
+  when unset, new value, actor, source `ui`|`cli`, time), and logged as one structured line
+  (`event: "flag_value_changed"`, actor pseudonymized as `actorRef`). The journal is append-only
+  (SQLite triggers refuse UPDATE and DELETE) and outlives deleted flags and environments.
+  `GET /api/flags/:id/history` returns the latest 200 entries, newest first; the UI shows them
+  under each flag ("History"). Once a flag is deleted its history stays in the database but is
+  no longer reachable from the UI or the API.
+- Retention: journal rows are never deleted, even with their app. For a UI change `actor` is the
+  user's display name as carried by the session token at that time; for a CLI change, the
+  `--actor` value. Erasing a name from the journal means dropping the triggers by hand (a
+  deliberate operator action; this is a single-user service).

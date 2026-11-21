@@ -209,7 +209,7 @@ describe('database migrations', () => {
     await ds.destroy();
   });
 
-  it('revert FlagExposure and apply it again', async () => {
+  it('revert the migrations down to FlagExposure and apply them again', async () => {
     const ds = dataSource(':memory:');
     await ds.initialize();
     await ds.runMigrations();
@@ -218,7 +218,13 @@ describe('database migrations', () => {
         await ds.query<{ name: string }[]>('PRAGMA table_info("feature_flags")')
       ).map((column) => column.name);
 
-    await ds.undoLastMigration();
+    await ds.undoLastMigration(); // FlagValueChanges
+    expect(
+      await ds.query(
+        "SELECT name FROM sqlite_master WHERE name LIKE 'flag_value_changes%'",
+      ),
+    ).toEqual([]);
+    await ds.undoLastMigration(); // FlagExposure
     expect(await columns()).not.toContain('client_exposed');
     expect(await columns()).not.toContain('last_evaluated_at');
     await ds.runMigrations();
