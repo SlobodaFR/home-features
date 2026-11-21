@@ -14,6 +14,7 @@ import { AuthModule } from './interfaces/http/modules/auth.module';
 import { HealthModule } from './interfaces/http/modules/health.module';
 import { FeatureFlagModule } from './interfaces/http/modules/feature-flag.module';
 import { MeModule } from './interfaces/http/modules/me.module';
+import { OfrepModule } from './interfaces/http/modules/ofrep.module';
 import { throttlerOptions } from './interfaces/http/throttling';
 
 @Module({
@@ -34,6 +35,7 @@ import { throttlerOptions } from './interfaces/http/throttling';
     AuthModule,
     MeModule,
     FeatureFlagModule,
+    OfrepModule,
     HealthModule,
   ],
   providers: [
