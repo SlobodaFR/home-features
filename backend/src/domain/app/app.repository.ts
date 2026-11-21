@@ -6,6 +6,8 @@ import { App } from './app';
 export abstract class AppRepository {
   abstract findAll(userId: string): Promise<App[]>;
   abstract findById(id: string): Promise<App | null>;
+  /** Every app with this slug, whatever its owner (slugs are unique per owner only). */
+  abstract findAllBySlug(slug: string): Promise<App[]>;
   abstract findByNameOrSlug(
     userId: string,
     name: string,
