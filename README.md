@@ -1,7 +1,9 @@
 # Kinetic Feature Management
 
 Feature flags & config management service for personal apps, deployed at
-[features.sloboda.fr](https://features.sloboda.fr).
+[features.sloboda.fr](https://features.sloboda.fr). The other `home-*` services read their flags
+through [OpenFeature](https://openfeature.dev) and the OFREP protocol
+([`docs/ofrep.md`](docs/ofrep.md)).
 
 ## Stack
 
@@ -115,12 +117,57 @@ replication.
 
 ## Domain model
 
-Apps own Environments, FeatureFlags (with per-environment on/off values) and ConfigEntries
-(with per-environment typed values: `STRING`/`NUMBER`/`BOOLEAN`/`JSON`). Management is done
-through an authenticated (OAuth2 session) REST API consumed by the React UI.
+Apps own Environments, FeatureFlags (with per-environment on/off values, an immutable key, a
+client-exposed switch and a last-evaluation time), ConfigEntries (with per-environment typed
+values: `STRING`/`NUMBER`/`BOOLEAN`/`JSON`) and ApiKeys (bound to one environment and a scope).
+Every flag value change is appended to `flag_value_changes`. Management is done through an
+authenticated (OAuth2 session) REST API consumed by the React UI.
 
-## Public exposure API
+## Flag evaluation for other services (OFREP)
 
-Other Sloboda apps can fetch an app's flags and config values at runtime via a public,
-read-only endpoint authenticated with a per-App API key (not the OAuth2 session). See
-[`docs/public-api.md`](docs/public-api.md) for the full contract.
+home-features is an OpenFeature provider through the OpenFeature Remote Evaluation Protocol 0.4.0
+(boolean flags): `POST /api/ofrep/v1/evaluate/flags/{key}` and `POST /api/ofrep/v1/evaluate/flags`
+(bulk, strong `ETag`, `304`). Authentication by an API key created in the UI for one app, one
+environment and a scope (`server` for backends, `web` for a browser-facing proxy, which only sees
+the flags marked client-exposed). Rate limited per key (300/min) and per IP for failed
+authentications (20/min). Full contract: [`docs/ofrep.md`](docs/ofrep.md).
+
+### Integrating a consumer (home-* backend)
+
+Do not write an HTTP client: use the official SDK and provider (`@openfeature/server-sdk` +
+`@openfeature/ofrep-provider`, not `@openfeature/nestjs-sdk`) behind a `FeatureFlags` port, as
+the reference adapter in home-auth does
+([SlobodaFR/home-auth#86](https://github.com/SlobodaFR/home-auth/pull/86),
+`backend/src/infrastructure/feature-flags/` and `backend/src/domain/shared/feature-flags.ts`):
+
+- `FeatureFlags.isEnabled(key, codeDefault)`; the code default is the current production
+  behaviour (off for anything new). For security « enforce » flags, the code default flips to on
+  in the release that follows their stabilisation in production; once a flag is no longer
+  needed, remove the code, then delete the flag here.
+- `OpenFeature.setProvider` (never `setProviderAndWait`: startup never waits for home-features),
+  `timeoutMs: 500`, `Authorization: Bearer` header from the configuration. `OFREP_ENDPOINT` and
+  `OFREP_HEADERS` (the provider also reads `OFREP_TIMEOUT_MS`) must be refused or ignored at
+  startup.
+- Optional `FEATURES_OFREP_URL` (`https://features.sloboda.fr/api`, https in production) and
+  `FEATURES_API_KEY` (`^hf_[0-9a-f]{64}$`, a `server` key bound to the right environment): absent
+  → no-op provider and one warning; the service still starts.
+- Per-key memo of 30 s; on errors other than `FLAG_NOT_FOUND`, the last known value (process
+  local) else the code default, with a throttled warning;
+  `FEATURES_PIN_<FLAG_KEY_IN_UPPER_SNAKE_CASE>=true|false` overrides everything in an emergency
+  (flag `new-ui` → `FEATURES_PIN_NEW_UI=false`). `OpenFeature.close()` on shutdown.
+- A front end goes through a same-origin proxy in its own backend, with a `web` key; flags a
+  browser may see are marked client-exposed here, never filtered by the consumer.
+
+### Emergency switch
+
+Without the UI or home-auth, on the VPS:
+`docker compose exec features node dist/cli/set-flag.js --app <slug> --env <slug> --flag <key> --enabled true|false [--actor <name>]`
+(journaled like a UI change). See [`docs/cli.md`](docs/cli.md).
+
+## Public exposure API (configs, legacy flags)
+
+`GET /api/v1/flags-and-configs?environment=<slug>` returns an app's flags and config values for
+the environment the API key is bound to (the `environment` parameter must name it, `400`
+otherwise). Prefer OFREP for flags. See [`docs/public-api.md`](docs/public-api.md), which also
+describes the flag lifecycle (immutable keys, confirmed deletion of a flag that is on, the
+append-only change journal) and the rate limits.
