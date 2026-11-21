@@ -1,7 +1,9 @@
-import { validateEnv } from './validate-env';
+import { DEV_PSEUDONYM_SECRET, validateEnv } from './validate-env';
 
+const STRONG = 'f'.repeat(64);
 const PROD = {
   NODE_ENV: 'production',
+  PSEUDONYM_SECRET: STRONG,
   AUTH_SERVICE_URL: 'https://auth.sloboda.fr',
   AUTH_CLIENT_ID: 'features',
   AUTH_CLIENT_SECRET: 'client-secret',
@@ -31,6 +33,17 @@ describe('validateEnv', () => {
         MINIO_SECRET_ACCESS_KEY: '',
       };
       expect(validateEnv(deployed)).toEqual(deployed);
+    });
+
+    it.each([
+      ['missing', undefined],
+      ['empty', ''],
+      ['shorter than 32 bytes', 'x'.repeat(31)],
+      ['the development fallback', DEV_PSEUDONYM_SECRET],
+    ])('rejects a PSEUDONYM_SECRET that is %s', (_label, secret) => {
+      expect(() => validateEnv({ ...PROD, PSEUDONYM_SECRET: secret })).toThrow(
+        'PSEUDONYM_SECRET',
+      );
     });
 
     it.each(['AUTH_CLIENT_ID', 'AUTH_CLIENT_SECRET', 'AUTH_WEBHOOK_SECRET'])(
@@ -116,6 +129,16 @@ describe('validateEnv', () => {
   });
 
   describe('outside production', () => {
+    it('falls back to the development secret, keeps a provided one', () => {
+      expect(validateEnv({ NODE_ENV: 'development' }).PSEUDONYM_SECRET).toBe(
+        DEV_PSEUDONYM_SECRET,
+      );
+      expect(
+        validateEnv({ NODE_ENV: 'test', PSEUDONYM_SECRET: 'mine' })
+          .PSEUDONYM_SECRET,
+      ).toBe('mine');
+    });
+
     it('requires nothing, so local runs and tests need no setup', () => {
       expect(() => validateEnv({})).not.toThrow();
       expect(() => validateEnv({ NODE_ENV: 'development' })).not.toThrow();
