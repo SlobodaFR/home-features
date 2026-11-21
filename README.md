@@ -48,23 +48,23 @@ This is the same auth integration pattern as the sibling app
 
 ## Environment variables (backend)
 
-| Variable                  | Required | Default                | Description                                                                                                                 |
-| ------------------------- | -------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `AUTH_SERVICE_URL`        | yes      | -                      | Base URL of the central auth service (`https://auth.sloboda.fr`).                                                           |
-| `AUTH_CLIENT_ID`          | yes      | -                      | OAuth2 client id registered with auth-service.                                                                              |
-| `AUTH_CLIENT_SECRET`      | yes      | -                      | Corresponding OAuth2 client secret.                                                                                         |
-| `AUTH_WEBHOOK_SECRET`     | yes      | -                      | Shared secret for the `POST /api/auth/disconnect` webhook.                                                                  |
-| `FRONTEND_URL`            | prod     | -                      | Public base URL (`https://` in production), used for the OAuth2 `redirect_uri`. No CORS: the SPA is served by this service. |
-| `DATABASE_PATH`           | no       | `data/features.sqlite` | Path to the SQLite file. Must not be empty.                                                                                 |
-| `TRUST_PROXY_HOPS`        | no       | `0`                    | Reverse-proxy hops to trust for `X-Forwarded-For` (`1` behind Caddy, set by the deploy workflow).                           |
-| `NODE_ENV`                | no       | -                      | `production` enables the `secure` flag on session cookies.                                                                  |
-| `PORT`                    | no       | `3002`                 | Port the server listens on.                                                                                                 |
-| `MINIO_ENDPOINT`          | no       | -                      | MinIO (S3-compatible) server URL.                                                                                           |
-| `MINIO_BUCKET`            | no       | -                      | Destination bucket. If set, enables Litestream replication of the SQLite DB.                                                |
-| `MINIO_REPLICA_PATH`      | no       | `home-features`        | Replication path prefix in the bucket.                                                                                      |
-| `MINIO_REGION`            | no       | `us-east-1`            | S3 region (required by the SDK, irrelevant for MinIO).                                                                      |
-| `MINIO_ACCESS_KEY_ID`     | no       | -                      | MinIO access key.                                                                                                           |
-| `MINIO_SECRET_ACCESS_KEY` | no       | -                      | MinIO secret key.                                                                                                           |
+| Variable                  | Required | Default                | Description                                                                                                                                                             |
+| ------------------------- | -------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTH_SERVICE_URL`        | yes      | -                      | Base URL of the central auth service (`https://auth.sloboda.fr`).                                                                                                       |
+| `AUTH_CLIENT_ID`          | yes      | -                      | OAuth2 client id registered with auth-service.                                                                                                                          |
+| `AUTH_CLIENT_SECRET`      | yes      | -                      | Corresponding OAuth2 client secret.                                                                                                                                     |
+| `AUTH_WEBHOOK_SECRET`     | yes      | -                      | Shared secret for the `POST /api/auth/disconnect` webhook.                                                                                                              |
+| `FRONTEND_URL`            | prod     | -                      | Public base URL (`https://` in production): OAuth2 `redirect_uri` and the only trusted `Origin` for mutations (CSRF guard). No CORS: the SPA is served by this service. |
+| `DATABASE_PATH`           | no       | `data/features.sqlite` | Path to the SQLite file. Must not be empty.                                                                                                                             |
+| `TRUST_PROXY_HOPS`        | no       | `0`                    | Reverse-proxy hops to trust for `X-Forwarded-For` (`1` behind Caddy, set by the deploy workflow).                                                                       |
+| `NODE_ENV`                | no       | -                      | `production` enables the `secure` flag on session cookies.                                                                                                              |
+| `PORT`                    | no       | `3002`                 | Port the server listens on.                                                                                                                                             |
+| `MINIO_ENDPOINT`          | no       | -                      | MinIO (S3-compatible) server URL.                                                                                                                                       |
+| `MINIO_BUCKET`            | no       | -                      | Destination bucket. If set, enables Litestream replication of the SQLite DB.                                                                                            |
+| `MINIO_REPLICA_PATH`      | no       | `home-features`        | Replication path prefix in the bucket.                                                                                                                                  |
+| `MINIO_REGION`            | no       | `us-east-1`            | S3 region (required by the SDK, irrelevant for MinIO).                                                                                                                  |
+| `MINIO_ACCESS_KEY_ID`     | no       | -                      | MinIO access key.                                                                                                                                                       |
+| `MINIO_SECRET_ACCESS_KEY` | no       | -                      | MinIO secret key.                                                                                                                                                       |
 
 Copy `backend/.env.example` to `backend/.env` and fill in the values. This file is read
 automatically by `ConfigModule` in dev, and can also be passed to `docker run --env-file`.
