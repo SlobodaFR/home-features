@@ -15,6 +15,7 @@ import { FlagsController } from './controllers/flags.controller';
 import { DeleteFeatureFlagDto } from './dto/save-feature-flag.dto';
 import { PublicApiController } from './controllers/public-api.controller';
 import { FeatureFlagModule } from './modules/feature-flag.module';
+import { testConfigModule } from '../../test-support/test-config.module';
 
 const USER = { id: 'user-1', email: 'user@example.com', name: 'User One' };
 
@@ -31,6 +32,7 @@ describe('Feature flag rollout safety (integration)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
+        testConfigModule(),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
@@ -222,6 +224,7 @@ describe('DELETE /api/flags/:id over HTTP', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
+        testConfigModule(),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',

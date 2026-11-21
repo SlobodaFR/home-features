@@ -22,6 +22,9 @@ import { UpdateEnvironmentUseCase } from '../../../application/environment/updat
 import { CreateFeatureFlagUseCase } from '../../../application/feature-flag/create-feature-flag.use-case';
 import { DeleteFeatureFlagUseCase } from '../../../application/feature-flag/delete-feature-flag.use-case';
 import { RecordFlagEvaluationsUseCase } from '../../../application/feature-flag/record-flag-evaluations.use-case';
+import { ChangeFlagValueService } from '../../../application/feature-flag/change-flag-value.service';
+import { FlagAuditLog } from '../../../application/feature-flag/flag-audit-log';
+import { ListFlagHistoryUseCase } from '../../../application/feature-flag/list-flag-history.use-case';
 import { ListFeatureFlagsUseCase } from '../../../application/feature-flag/list-feature-flags.use-case';
 import { SetFlagValueUseCase } from '../../../application/feature-flag/set-flag-value.use-case';
 import { UpdateFeatureFlagUseCase } from '../../../application/feature-flag/update-feature-flag.use-case';
@@ -34,13 +37,16 @@ import { ConfigEntryRepository } from '../../../domain/config-entry/config-entry
 import { ConfigValueRepository } from '../../../domain/config-entry/config-value.repository';
 import { EnvironmentRepository } from '../../../domain/environment/environment.repository';
 import { FeatureFlagRepository } from '../../../domain/feature-flag/feature-flag.repository';
+import { FlagValueChangeRepository } from '../../../domain/feature-flag/flag-value-change.repository';
 import { FlagValueRepository } from '../../../domain/feature-flag/flag-value.repository';
+import { PinoFlagAuditLog } from '../../../infrastructure/logging/pino-flag-audit-log';
 import { ApiKeyOrmEntity } from '../../../infrastructure/persistence/entities/api-key.orm-entity';
 import { AppOrmEntity } from '../../../infrastructure/persistence/entities/app.orm-entity';
 import { ConfigEntryOrmEntity } from '../../../infrastructure/persistence/entities/config-entry.orm-entity';
 import { ConfigValueOrmEntity } from '../../../infrastructure/persistence/entities/config-value.orm-entity';
 import { EnvironmentOrmEntity } from '../../../infrastructure/persistence/entities/environment.orm-entity';
 import { FeatureFlagOrmEntity } from '../../../infrastructure/persistence/entities/feature-flag.orm-entity';
+import { FlagValueChangeOrmEntity } from '../../../infrastructure/persistence/entities/flag-value-change.orm-entity';
 import { FlagValueOrmEntity } from '../../../infrastructure/persistence/entities/flag-value.orm-entity';
 import { TypeOrmApiKeyRepository } from '../../../infrastructure/persistence/repositories/typeorm-api-key.repository';
 import { TypeOrmAppRepository } from '../../../infrastructure/persistence/repositories/typeorm-app.repository';
@@ -48,6 +54,7 @@ import { TypeOrmConfigEntryRepository } from '../../../infrastructure/persistenc
 import { TypeOrmConfigValueRepository } from '../../../infrastructure/persistence/repositories/typeorm-config-value.repository';
 import { TypeOrmEnvironmentRepository } from '../../../infrastructure/persistence/repositories/typeorm-environment.repository';
 import { TypeOrmFeatureFlagRepository } from '../../../infrastructure/persistence/repositories/typeorm-feature-flag.repository';
+import { TypeOrmFlagValueChangeRepository } from '../../../infrastructure/persistence/repositories/typeorm-flag-value-change.repository';
 import { TypeOrmFlagValueRepository } from '../../../infrastructure/persistence/repositories/typeorm-flag-value.repository';
 import { ApiKeysController } from '../controllers/api-keys.controller';
 import { AppApiKeysController } from '../controllers/app-api-keys.controller';
@@ -70,6 +77,7 @@ import { PublicApiController } from '../controllers/public-api.controller';
       ConfigEntryOrmEntity,
       ConfigValueOrmEntity,
       ApiKeyOrmEntity,
+      FlagValueChangeOrmEntity,
     ]),
   ],
   controllers: [
@@ -92,6 +100,11 @@ import { PublicApiController } from '../controllers/public-api.controller';
     { provide: ConfigEntryRepository, useClass: TypeOrmConfigEntryRepository },
     { provide: ConfigValueRepository, useClass: TypeOrmConfigValueRepository },
     { provide: ApiKeyRepository, useClass: TypeOrmApiKeyRepository },
+    {
+      provide: FlagValueChangeRepository,
+      useClass: TypeOrmFlagValueChangeRepository,
+    },
+    { provide: FlagAuditLog, useClass: PinoFlagAuditLog },
     // App
     ListAppsUseCase,
     GetAppUseCase,
@@ -111,6 +124,8 @@ import { PublicApiController } from '../controllers/public-api.controller';
     DeleteFeatureFlagUseCase,
     SetFlagValueUseCase,
     RecordFlagEvaluationsUseCase,
+    ChangeFlagValueService,
+    ListFlagHistoryUseCase,
     // ConfigEntry
     ListConfigEntriesUseCase,
     CreateConfigEntryUseCase,

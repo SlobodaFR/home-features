@@ -5,7 +5,14 @@ import { EnvironmentRepository } from '../../domain/environment/environment.repo
 import { FeatureFlag } from '../../domain/feature-flag/feature-flag';
 import { FeatureFlagRepository } from '../../domain/feature-flag/feature-flag.repository';
 import { FlagValue } from '../../domain/feature-flag/flag-value';
-import { FlagValueRepository } from '../../domain/feature-flag/flag-value.repository';
+import { FlagValueChange } from '../../domain/feature-flag/flag-value-change';
+import {
+  FlagValueChangeAuthor,
+  FlagValueRepository,
+  RecordedFlagValue,
+} from '../../domain/feature-flag/flag-value.repository';
+import { ChangeFlagValueService } from './change-flag-value.service';
+import { FlagAuditLog } from './flag-audit-log';
 import { SetFlagValueUseCase } from './set-flag-value.use-case';
 
 class InMemoryAppRepository extends AppRepository {
@@ -80,7 +87,7 @@ class InMemoryFlagValueRepository extends FlagValueRepository {
       ) ?? null
     );
   }
-  async upsert(flagValue: FlagValue): Promise<FlagValue> {
+  private replace(flagValue: FlagValue): void {
     this.values = this.values.filter(
       (v) =>
         !(
@@ -89,10 +96,42 @@ class InMemoryFlagValueRepository extends FlagValueRepository {
         ),
     );
     this.values.push(flagValue);
-    return flagValue;
   }
+  async upsertRecordingChange(
+    flagValue: FlagValue,
+    author: FlagValueChangeAuthor,
+  ): Promise<RecordedFlagValue> {
+    const existing = await this.findOne(
+      flagValue.flagId,
+      flagValue.environmentId,
+    );
+    if (existing?.enabled === flagValue.enabled) {
+      return { value: existing, change: null };
+    }
+    this.replace(flagValue);
+    const change = FlagValueChange.create({
+      id: `c${this.changes.length}`,
+      flagId: flagValue.flagId,
+      environmentId: flagValue.environmentId,
+      oldEnabled: existing ? existing.enabled : null,
+      newEnabled: flagValue.enabled,
+      actor: author.actor,
+      source: author.source,
+      at: flagValue.updatedAt,
+    });
+    this.changes.push(change);
+    return { value: flagValue, change };
+  }
+  changes: FlagValueChange[] = [];
   async deleteByFlagId(): Promise<void> {}
   async deleteByEnvironmentId(): Promise<void> {}
+}
+
+class RecordingAuditLog extends FlagAuditLog {
+  lines: { change: FlagValueChange; identity: string }[] = [];
+  valueChanged(_flag: FeatureFlag, change: FlagValueChange, identity: string) {
+    this.lines.push({ change, identity });
+  }
 }
 
 const APP = App.create({
@@ -129,23 +168,27 @@ function buildUseCase() {
   const environmentRepository = new InMemoryEnvironmentRepository([ENV]);
   const flagRepository = new InMemoryFeatureFlagRepository([FLAG]);
   const flagValueRepository = new InMemoryFlagValueRepository();
+  const auditLog = new RecordingAuditLog();
 
   return {
     useCase: new SetFlagValueUseCase(
       appRepository,
       flagRepository,
       environmentRepository,
-      flagValueRepository,
+      new ChangeFlagValueService(flagValueRepository, auditLog),
     ),
     flagValueRepository,
+    auditLog,
   };
 }
+
+const USER = { id: 'user-1', name: 'Alice' };
 
 describe('SetFlagValueUseCase', () => {
   it('creates a flag value when none exists', async () => {
     const { useCase, flagValueRepository } = buildUseCase();
 
-    const dto = await useCase.execute('flag-1', 'env-1', true, 'user-1');
+    const dto = await useCase.execute('flag-1', 'env-1', true, USER);
 
     expect(dto.enabled).toBe(true);
     expect(dto.environmentId).toBe('env-1');
@@ -155,18 +198,42 @@ describe('SetFlagValueUseCase', () => {
   it('upserts (updates) an existing flag value', async () => {
     const { useCase, flagValueRepository } = buildUseCase();
 
-    await useCase.execute('flag-1', 'env-1', true, 'user-1');
-    const dto = await useCase.execute('flag-1', 'env-1', false, 'user-1');
+    await useCase.execute('flag-1', 'env-1', true, USER);
+    const dto = await useCase.execute('flag-1', 'env-1', false, USER);
 
     expect(dto.enabled).toBe(false);
     expect(flagValueRepository.values).toHaveLength(1);
+  });
+
+  it('journals the change with the user name and logs the user id as identity', async () => {
+    const { useCase, flagValueRepository, auditLog } = buildUseCase();
+
+    await useCase.execute('flag-1', 'env-1', true, USER);
+
+    expect(flagValueRepository.changes.map((c) => [c.actor, c.source])).toEqual(
+      [['Alice', 'ui']],
+    );
+    expect(auditLog.lines.map((line) => line.identity)).toEqual(['user-1']);
+  });
+
+  it('neither journals nor logs an unchanged value', async () => {
+    const { useCase, flagValueRepository, auditLog } = buildUseCase();
+
+    await useCase.execute('flag-1', 'env-1', true, USER);
+    await useCase.execute('flag-1', 'env-1', true, USER);
+
+    expect(flagValueRepository.changes).toHaveLength(1);
+    expect(auditLog.lines).toHaveLength(1);
   });
 
   it('throws 404 if the flag does not belong to the user', async () => {
     const { useCase } = buildUseCase();
 
     await expect(
-      useCase.execute('flag-1', 'env-1', true, 'other-user'),
+      useCase.execute('flag-1', 'env-1', true, {
+        id: 'other-user',
+        name: 'Other',
+      }),
     ).rejects.toThrow(/not found/);
   });
 
@@ -174,7 +241,7 @@ describe('SetFlagValueUseCase', () => {
     const { useCase } = buildUseCase();
 
     await expect(
-      useCase.execute('flag-1', 'unknown-env', true, 'user-1'),
+      useCase.execute('flag-1', 'unknown-env', true, USER),
     ).rejects.toThrow(/not found/);
   });
 });

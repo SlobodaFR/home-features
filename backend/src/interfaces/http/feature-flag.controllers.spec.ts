@@ -10,6 +10,7 @@ import { ConfigsController } from './controllers/configs.controller';
 import { EnvironmentsController } from './controllers/environments.controller';
 import { FlagsController } from './controllers/flags.controller';
 import { FeatureFlagModule } from './modules/feature-flag.module';
+import { testConfigModule } from '../../test-support/test-config.module';
 
 const USER = { id: 'user-1', email: 'user@example.com', name: 'User One' };
 const OTHER_USER = {
@@ -30,6 +31,7 @@ describe('Feature flag controllers (integration)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
+        testConfigModule(),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',

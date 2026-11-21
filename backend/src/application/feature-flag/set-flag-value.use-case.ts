@@ -1,17 +1,16 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { AppRepository } from '../../domain/app/app.repository';
 import { EnvironmentRepository } from '../../domain/environment/environment.repository';
 import { FeatureFlagRepository } from '../../domain/feature-flag/feature-flag.repository';
-import { FlagValue } from '../../domain/feature-flag/flag-value';
-import { FlagValueRepository } from '../../domain/feature-flag/flag-value.repository';
 import { assertFeatureFlagOwnership } from './assert-feature-flag-ownership';
+import { ChangeFlagValueService } from './change-flag-value.service';
 import { FlagValueDto } from './feature-flag.dto';
 import { toFlagValueDto } from './to-feature-flag-dto';
+
+export interface FlagValueUser {
+  id: string;
+  name: string;
+}
 
 @Injectable()
 export class SetFlagValueUseCase {
@@ -19,20 +18,20 @@ export class SetFlagValueUseCase {
     private readonly appRepository: AppRepository,
     private readonly flagRepository: FeatureFlagRepository,
     private readonly environmentRepository: EnvironmentRepository,
-    private readonly flagValueRepository: FlagValueRepository,
+    private readonly changeFlagValue: ChangeFlagValueService,
   ) {}
 
   async execute(
     flagId: string,
     environmentId: string,
     enabled: boolean,
-    userId: string,
+    user: FlagValueUser,
   ): Promise<FlagValueDto> {
     const flag = await assertFeatureFlagOwnership(
       this.flagRepository,
       this.appRepository,
       flagId,
-      userId,
+      user.id,
     );
 
     const environment =
@@ -41,22 +40,12 @@ export class SetFlagValueUseCase {
       throw new NotFoundException(`Environment ${environmentId} not found`);
     }
 
-    let flagValue: FlagValue;
-    try {
-      flagValue = FlagValue.create({
-        id: randomUUID(),
-        flagId,
-        environmentId,
-        enabled,
-        updatedAt: new Date(),
-      });
-    } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : 'Invalid flag value',
-      );
-    }
-
-    const saved = await this.flagValueRepository.upsert(flagValue);
+    const saved = await this.changeFlagValue.execute(
+      flag,
+      environment,
+      enabled,
+      { name: user.name.trim() || user.id, identity: user.id, source: 'ui' },
+    );
 
     return toFlagValueDto(saved);
   }

@@ -3,6 +3,7 @@ import { App } from '../domain/app';
 import { ConfigEntryWithValues, ConfigValueType } from '../domain/config-entry';
 import { Environment } from '../domain/environment';
 import { FeatureFlagWithValues } from '../domain/feature-flag';
+import { FlagValueChange } from '../domain/flag-value-change';
 import { AppOverview } from '../domain/overview';
 import { CurrentUser } from '../domain/user';
 
@@ -177,6 +178,10 @@ export const apiClient = {
       'DELETE',
       confirm === undefined ? undefined : { confirm },
     );
+  },
+  /** Newest first, at most 200 entries. */
+  fetchFlagHistory(flagId: string): Promise<FlagValueChange[]> {
+    return getJson<FlagValueChange[]>(`/flags/${flagId}/history`);
   },
   async setFlagValue(
     flagId: string,
