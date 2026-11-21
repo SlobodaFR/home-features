@@ -1,24 +1,23 @@
 import {
+  BadRequestException,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ApiKeyRepository } from '../../domain/api-key/api-key.repository';
-import { hashApiKeyToken } from '../../domain/api-key/api-key-token';
-import { AppRepository } from '../../domain/app/app.repository';
 import { ConfigEntryRepository } from '../../domain/config-entry/config-entry.repository';
 import { ConfigValueRepository } from '../../domain/config-entry/config-value.repository';
-import { EnvironmentRepository } from '../../domain/environment/environment.repository';
 import { FeatureFlagRepository } from '../../domain/feature-flag/feature-flag.repository';
 import { FlagValueRepository } from '../../domain/feature-flag/flag-value.repository';
+import { AuthenticateApiKeyUseCase } from '../api-key/authenticate-api-key.use-case';
 import { FlagsAndConfigsDto } from './flags-and-configs.dto';
 
+/**
+ * Legacy read of every flag and config of the key's environment. The `environment` query
+ * parameter is kept for compatibility but must name the key's own environment (400 otherwise).
+ */
 @Injectable()
 export class GetFlagsAndConfigsUseCase {
   constructor(
-    private readonly apiKeyRepository: ApiKeyRepository,
-    private readonly appRepository: AppRepository,
-    private readonly environmentRepository: EnvironmentRepository,
+    private readonly authenticateApiKey: AuthenticateApiKeyUseCase,
     private readonly featureFlagRepository: FeatureFlagRepository,
     private readonly flagValueRepository: FlagValueRepository,
     private readonly configEntryRepository: ConfigEntryRepository,
@@ -29,26 +28,27 @@ export class GetFlagsAndConfigsUseCase {
     apiKeyToken: string,
     environmentSlug: string,
   ): Promise<FlagsAndConfigsDto> {
-    const apiKey = await this.apiKeyRepository.findByKeyHash(
-      hashApiKeyToken(apiKeyToken),
-    );
-    if (!apiKey) {
+    const authenticated = await this.authenticateApiKey.execute(apiKeyToken);
+    if (!authenticated) {
       throw new UnauthorizedException('Invalid API key');
     }
+    const { apiKey, app, environment } = authenticated;
 
-    const app = await this.appRepository.findById(apiKey.appId);
-    if (!app) {
-      throw new UnauthorizedException('Invalid API key');
-    }
-
-    const environment = await this.environmentRepository.findBySlug(
-      app.id,
-      environmentSlug,
-    );
-    if (!environment) {
-      throw new NotFoundException(
-        `Environment "${environmentSlug}" not found for this app`,
+    if (environmentSlug !== environment.slug) {
+      throw new BadRequestException(
+        'This API key is bound to another environment',
       );
+    }
+
+    // A web key only sees client-exposed flags, and no flag is client-exposed yet; configs are
+    // never exposed to browsers.
+    if (apiKey.scope === 'web') {
+      return {
+        app: app.slug,
+        environment: environment.slug,
+        flags: {},
+        configs: {},
+      };
     }
 
     const [featureFlags, flagValues, configEntries, configValues] =
@@ -74,13 +74,6 @@ export class GetFlagsAndConfigsUseCase {
           v.configEntryId === entry.id && v.environmentId === environment.id,
       );
       configs[entry.key] = value ? value.parse() : null;
-    }
-
-    // Best-effort: update lastUsedAt without failing the request.
-    try {
-      await this.apiKeyRepository.save(apiKey.withLastUsedAt(new Date()));
-    } catch {
-      // ignore
     }
 
     return {

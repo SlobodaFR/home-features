@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthenticateApiKeyUseCase } from '../../../application/api-key/authenticate-api-key.use-case';
 import { CreateApiKeyUseCase } from '../../../application/api-key/create-api-key.use-case';
 import { DeleteApiKeyUseCase } from '../../../application/api-key/delete-api-key.use-case';
 import { ListApiKeysUseCase } from '../../../application/api-key/list-api-keys.use-case';
@@ -25,6 +26,7 @@ import { SetFlagValueUseCase } from '../../../application/feature-flag/set-flag-
 import { UpdateFeatureFlagUseCase } from '../../../application/feature-flag/update-feature-flag.use-case';
 import { GetAppOverviewUseCase } from '../../../application/overview/get-app-overview.use-case';
 import { GetFlagsAndConfigsUseCase } from '../../../application/public-api/get-flags-and-configs.use-case';
+import { WriteDebouncer } from '../../../application/shared/write-debouncer';
 import { ApiKeyRepository } from '../../../domain/api-key/api-key.repository';
 import { AppRepository } from '../../../domain/app/app.repository';
 import { ConfigEntryRepository } from '../../../domain/config-entry/config-entry.repository';
@@ -119,6 +121,8 @@ import { PublicApiController } from '../controllers/public-api.controller';
     ListApiKeysUseCase,
     CreateApiKeyUseCase,
     DeleteApiKeyUseCase,
+    AuthenticateApiKeyUseCase,
+    WriteDebouncer,
     // Public exposure API
     GetFlagsAndConfigsUseCase,
   ],

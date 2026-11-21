@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { AppRepository } from '../../domain/app/app.repository';
 import { ApiKey } from '../../domain/api-key/api-key';
@@ -7,23 +11,34 @@ import {
   hashApiKeyToken,
 } from '../../domain/api-key/api-key-token';
 import { ApiKeyRepository } from '../../domain/api-key/api-key.repository';
+import { EnvironmentRepository } from '../../domain/environment/environment.repository';
 import { assertAppOwnership } from '../app/assert-app-ownership';
-import { ApiKeyWithSecretDto } from './api-key.dto';
+import { ApiKeyInput, ApiKeyWithSecretDto } from './api-key.dto';
 import { toApiKeyDto } from './to-api-key-dto';
 
 @Injectable()
 export class CreateApiKeyUseCase {
   constructor(
     private readonly appRepository: AppRepository,
+    private readonly environmentRepository: EnvironmentRepository,
     private readonly apiKeyRepository: ApiKeyRepository,
   ) {}
 
   async execute(
     appId: string,
-    name: string,
+    input: ApiKeyInput,
     userId: string,
   ): Promise<ApiKeyWithSecretDto> {
     await assertAppOwnership(this.appRepository, appId, userId);
+
+    const environment = await this.environmentRepository.findById(
+      input.environmentId,
+    );
+    if (!environment || environment.appId !== appId) {
+      throw new NotFoundException(
+        `Environment ${input.environmentId} not found`,
+      );
+    }
 
     const token = generateApiKeyToken();
 
@@ -32,7 +47,9 @@ export class CreateApiKeyUseCase {
       apiKey = ApiKey.create({
         id: randomUUID(),
         appId,
-        name,
+        environmentId: environment.id,
+        scope: input.scope,
+        name: input.name,
         keyHash: hashApiKeyToken(token),
         createdAt: new Date(),
         lastUsedAt: null,

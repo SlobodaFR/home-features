@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiKey, ApiKeyWithSecret } from '../domain/api-key';
-import { apiClient } from '../infrastructure/api-client';
+import { apiClient, SaveApiKeyPayload } from '../infrastructure/api-client';
 
 export interface ApiKeysState {
   loading: boolean;
   error: string | null;
   apiKeys: ApiKey[];
   refresh: () => Promise<void>;
-  createApiKey: (name: string) => Promise<ApiKeyWithSecret>;
+  createApiKey: (payload: SaveApiKeyPayload) => Promise<ApiKeyWithSecret>;
   deleteApiKey: (id: string) => Promise<void>;
 }
 
@@ -38,8 +38,8 @@ export function useApiKeys(appId: string): ApiKeysState {
   }, [refresh]);
 
   const createApiKey = useCallback(
-    async (name: string) => {
-      const created = await apiClient.createApiKey(appId, { name });
+    async (payload: SaveApiKeyPayload) => {
+      const created = await apiClient.createApiKey(appId, payload);
       await refresh();
       return created;
     },
