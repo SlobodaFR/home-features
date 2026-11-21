@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { validateEnv } from './infrastructure/config/validate-env';
 import { serveStaticOptions } from './static-assets';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
 import { AuthModule } from './interfaces/http/modules/auth.module';
@@ -10,7 +11,7 @@ import { MeModule } from './interfaces/http/modules/me.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     DatabaseModule,
     ServeStaticModule.forRoot(serveStaticOptions(join(__dirname, 'public'))),
     AuthModule,
