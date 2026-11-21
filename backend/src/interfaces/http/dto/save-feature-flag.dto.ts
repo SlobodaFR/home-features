@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+} from 'class-validator';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -17,4 +23,34 @@ export class SaveFeatureFlagDto {
   @IsOptional()
   @IsString()
   description?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  clientExposed?: boolean;
+}
+
+/** PATCH: every field optional. `key` is accepted only unchanged (keys are immutable). */
+export class UpdateFeatureFlagDto {
+  @IsOptional()
+  @IsString()
+  key?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  clientExposed?: boolean;
+}
+
+export class DeleteFeatureFlagDto {
+  @IsOptional()
+  @IsString()
+  confirm?: string;
 }

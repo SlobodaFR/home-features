@@ -179,8 +179,8 @@ describe('PublicApiController (integration)', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  // No flag is client-exposed yet: a web key sees nothing, never the server flags or configs.
-  it('gives a web key neither the flags nor the configs', async () => {
+  // The flag is not client-exposed: a web key never sees it, nor any config.
+  it('hides non-exposed flags and every config from a web key', async () => {
     const { app, production } = await appWithEnvironments();
     const flag = await appFlagsController.create(
       app.id,

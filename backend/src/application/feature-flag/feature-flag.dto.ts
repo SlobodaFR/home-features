@@ -10,6 +10,8 @@ export interface FeatureFlagDto {
   key: string;
   name: string;
   description: string | null;
+  clientExposed: boolean;
+  lastEvaluatedAt: string | null;
   createdAt: string;
 }
 
