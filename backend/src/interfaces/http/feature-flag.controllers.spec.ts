@@ -1,11 +1,6 @@
+import { ENTITIES } from '../../infrastructure/persistence/entities';
 import { Test } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppOrmEntity } from '../../infrastructure/persistence/entities/app.orm-entity';
-import { ConfigEntryOrmEntity } from '../../infrastructure/persistence/entities/config-entry.orm-entity';
-import { ConfigValueOrmEntity } from '../../infrastructure/persistence/entities/config-value.orm-entity';
-import { EnvironmentOrmEntity } from '../../infrastructure/persistence/entities/environment.orm-entity';
-import { FeatureFlagOrmEntity } from '../../infrastructure/persistence/entities/feature-flag.orm-entity';
-import { FlagValueOrmEntity } from '../../infrastructure/persistence/entities/flag-value.orm-entity';
 import { ConfigValueType } from '../../domain/config-entry/config-value-type.enum';
 import { AppEnvironmentsController } from './controllers/app-environments.controller';
 import { AppConfigsController } from './controllers/app-configs.controller';
@@ -40,14 +35,7 @@ describe('Feature flag controllers (integration)', () => {
           database: ':memory:',
           dropSchema: true,
           synchronize: true,
-          entities: [
-            AppOrmEntity,
-            EnvironmentOrmEntity,
-            FeatureFlagOrmEntity,
-            FlagValueOrmEntity,
-            ConfigEntryOrmEntity,
-            ConfigValueOrmEntity,
-          ],
+          entities: ENTITIES,
         }),
         FeatureFlagModule,
       ],
