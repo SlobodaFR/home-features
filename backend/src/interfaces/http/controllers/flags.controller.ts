@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -9,6 +10,7 @@ import {
   Put,
 } from '@nestjs/common';
 import { DeleteFeatureFlagUseCase } from '../../../application/feature-flag/delete-feature-flag.use-case';
+import { ListFlagHistoryUseCase } from '../../../application/feature-flag/list-flag-history.use-case';
 import { SetFlagValueUseCase } from '../../../application/feature-flag/set-flag-value.use-case';
 import { UpdateFeatureFlagUseCase } from '../../../application/feature-flag/update-feature-flag.use-case';
 import {
@@ -27,7 +29,13 @@ export class FlagsController {
     private readonly updateFeatureFlag: UpdateFeatureFlagUseCase,
     private readonly deleteFeatureFlag: DeleteFeatureFlagUseCase,
     private readonly setFlagValue: SetFlagValueUseCase,
+    private readonly listFlagHistory: ListFlagHistoryUseCase,
   ) {}
+
+  @Get(':id/history')
+  history(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.listFlagHistory.execute(id, user.id);
+  }
 
   @Patch(':id')
   update(
@@ -66,6 +74,6 @@ export class FlagsController {
     @Body() dto: SetFlagValueDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.setFlagValue.execute(id, environmentId, dto.enabled, user.id);
+    return this.setFlagValue.execute(id, environmentId, dto.enabled, user);
   }
 }
