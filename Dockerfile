@@ -31,6 +31,8 @@ FROM node:26-bookworm-slim AS runtime
 ARG TARGETARCH
 ARG LITESTREAM_VERSION=0.3.13
 ENV NODE_ENV=production
+# The port EXPOSEd, mapped by compose and probed by HEALTHCHECK (main.ts defaults to 3002 locally).
+ENV PORT=3000
 ENV DATABASE_PATH=/app/backend/data/features.sqlite
 WORKDIR /app
 RUN apt-get update \
@@ -50,5 +52,8 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
 VOLUME ["/app/backend/data"]
 WORKDIR /app/backend
 EXPOSE 3000
+# curl is purged from the image: use Node's fetch. /healthz is internal (blocked by Caddy).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD ["node", "-e", "fetch('http://127.0.0.1:3000/healthz').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "dist/main.js"]

@@ -306,11 +306,13 @@ describe('logging through the real NestJS stack', () => {
     }
   });
 
-  it('logs nothing for static assets, but still logs API requests', async () => {
+  it('logs nothing for static assets or /healthz, but still logs API requests', async () => {
     const { lines, stream } = shared;
     const app = await appLoggingTo(stream);
 
     await request(app.getHttpServer()).get('/assets/app.js');
+    await request(app.getHttpServer()).get('/healthz');
+    await request(app.getHttpServer()).get('/HEALTHZ/');
     await request(app.getHttpServer()).get('/probe/ok').expect(200);
     await settle();
     await app.close();
@@ -318,5 +320,6 @@ describe('logging through the real NestJS stack', () => {
     const output = lines.join('');
     expect(output).toContain('/probe/ok');
     expect(output).not.toContain('/assets/');
+    expect(output.toLowerCase()).not.toContain('healthz');
   });
 });

@@ -20,7 +20,8 @@ export function configureApp(
   if (trustProxyHops > 0) {
     app.set('trust proxy', trustProxyHops);
   }
-  app.setGlobalPrefix('api');
+  // /healthz stays at the root: Docker HEALTHCHECK and Caddy (which blocks it) know that path.
+  app.setGlobalPrefix('api', { exclude: ['healthz'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.use(cookieParser());
 }
