@@ -153,6 +153,7 @@ describe('database migrations', () => {
       "INSERT INTO api_keys (id, app_id, name, key_hash, created_at, last_used_at) VALUES ('k1', 'a1', 'Backend', 'hash-1', '2026-11-01 10:00:00', NULL)",
     );
     const before = await dumpData(legacy, KEPT_TABLES);
+    const legacyColumns = await columnsOf(legacy, KEPT_TABLES);
     await legacy.destroy();
 
     const migrated = dataSource(file);
@@ -162,7 +163,15 @@ describe('database migrations', () => {
     expect(applied.map((migration) => migration.name)).toEqual(
       MIGRATIONS.map((migration) => migration.name),
     );
-    expect(await dumpData(migrated, KEPT_TABLES)).toEqual(before);
+    expect(await dumpData(migrated, KEPT_TABLES, legacyColumns)).toEqual(
+      before,
+    );
+    // Existing flags stay server-only and are not evaluated yet.
+    expect(
+      await migrated.query(
+        'SELECT key, client_exposed, last_evaluated_at FROM feature_flags',
+      ),
+    ).toEqual([{ key: 'new-ui', client_exposed: 0, last_evaluated_at: null }]);
     expect(await migrated.query('SELECT * FROM api_keys')).toEqual([]);
     expect(await migrated.query('PRAGMA foreign_key_check')).toEqual([]);
     expect(
@@ -200,6 +209,26 @@ describe('database migrations', () => {
     await ds.destroy();
   });
 
+  it('revert FlagExposure and apply it again', async () => {
+    const ds = dataSource(':memory:');
+    await ds.initialize();
+    await ds.runMigrations();
+    const columns = async () =>
+      (
+        await ds.query<{ name: string }[]>('PRAGMA table_info("feature_flags")')
+      ).map((column) => column.name);
+
+    await ds.undoLastMigration();
+    expect(await columns()).not.toContain('client_exposed');
+    expect(await columns()).not.toContain('last_evaluated_at');
+    await ds.runMigrations();
+    expect(await columns()).toEqual(
+      expect.arrayContaining(['client_exposed', 'last_evaluated_at']),
+    );
+    expect((await ds.driver.createSchemaBuilder().log()).upQueries).toEqual([]);
+    await ds.destroy();
+  });
+
   it('run a second time without changing anything', async () => {
     const ds = dataSource(':memory:');
     await ds.initialize();
@@ -221,13 +250,33 @@ const KEPT_TABLES = [
   'config_values',
 ];
 
+/** Rows of each table, restricted to `columns` when given (later migrations add columns). */
 async function dumpData(
   ds: DataSource,
   tables: string[],
+  columns: Record<string, string[]> = {},
 ): Promise<Record<string, unknown[]>> {
   const dump: Record<string, unknown[]> = {};
   for (const table of tables) {
-    dump[table] = await ds.query(`SELECT * FROM "${table}" ORDER BY 1`);
+    const list =
+      table in columns
+        ? columns[table].map((column) => `"${column}"`).join(', ')
+        : '*';
+    dump[table] = await ds.query(`SELECT ${list} FROM "${table}" ORDER BY 1`);
   }
   return dump;
+}
+
+async function columnsOf(
+  ds: DataSource,
+  tables: string[],
+): Promise<Record<string, string[]>> {
+  const columns: Record<string, string[]> = {};
+  for (const table of tables) {
+    const info: { name: string }[] = await ds.query(
+      `PRAGMA table_info("${table}")`,
+    );
+    columns[table] = info.map((column) => column.name);
+  }
+  return columns;
 }

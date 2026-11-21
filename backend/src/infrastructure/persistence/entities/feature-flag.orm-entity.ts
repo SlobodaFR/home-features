@@ -33,4 +33,10 @@ export class FeatureFlagOrmEntity {
 
   @Column({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
+
+  @Column({ type: 'boolean', name: 'client_exposed', default: false })
+  clientExposed!: boolean;
+
+  @Column({ type: 'datetime', name: 'last_evaluated_at', nullable: true })
+  lastEvaluatedAt!: Date | null;
 }

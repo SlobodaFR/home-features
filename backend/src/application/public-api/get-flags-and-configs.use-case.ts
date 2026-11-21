@@ -8,6 +8,7 @@ import { ConfigValueRepository } from '../../domain/config-entry/config-value.re
 import { FeatureFlagRepository } from '../../domain/feature-flag/feature-flag.repository';
 import { FlagValueRepository } from '../../domain/feature-flag/flag-value.repository';
 import { AuthenticateApiKeyUseCase } from '../api-key/authenticate-api-key.use-case';
+import { RecordFlagEvaluationsUseCase } from '../feature-flag/record-flag-evaluations.use-case';
 import { FlagsAndConfigsDto } from './flags-and-configs.dto';
 
 /**
@@ -22,6 +23,7 @@ export class GetFlagsAndConfigsUseCase {
     private readonly flagValueRepository: FlagValueRepository,
     private readonly configEntryRepository: ConfigEntryRepository,
     private readonly configValueRepository: ConfigValueRepository,
+    private readonly recordFlagEvaluations: RecordFlagEvaluationsUseCase,
   ) {}
 
   async execute(
@@ -40,24 +42,15 @@ export class GetFlagsAndConfigsUseCase {
       );
     }
 
-    // A web key only sees client-exposed flags, and no flag is client-exposed yet; configs are
-    // never exposed to browsers.
-    if (apiKey.scope === 'web') {
-      return {
-        app: app.slug,
-        environment: environment.slug,
-        flags: {},
-        configs: {},
-      };
-    }
-
-    const [featureFlags, flagValues, configEntries, configValues] =
-      await Promise.all([
-        this.featureFlagRepository.findAllByAppId(app.id),
-        this.flagValueRepository.findAllByAppId(app.id),
-        this.configEntryRepository.findAllByAppId(app.id),
-        this.configValueRepository.findAllByAppId(app.id),
-      ]);
+    const [allFlags, flagValues] = await Promise.all([
+      this.featureFlagRepository.findAllByAppId(app.id),
+      this.flagValueRepository.findAllByAppId(app.id),
+    ]);
+    // A web key only sees the client-exposed flags.
+    const featureFlags =
+      apiKey.scope === 'web'
+        ? allFlags.filter((flag) => flag.clientExposed)
+        : allFlags;
 
     const flags: Record<string, boolean> = {};
     for (const flag of featureFlags) {
@@ -66,6 +59,22 @@ export class GetFlagsAndConfigsUseCase {
       );
       flags[flag.key] = value?.enabled ?? false;
     }
+    await this.recordFlagEvaluations.execute(featureFlags);
+
+    // Configs are never browser-facing.
+    if (apiKey.scope === 'web') {
+      return {
+        app: app.slug,
+        environment: environment.slug,
+        flags,
+        configs: {},
+      };
+    }
+
+    const [configEntries, configValues] = await Promise.all([
+      this.configEntryRepository.findAllByAppId(app.id),
+      this.configValueRepository.findAllByAppId(app.id),
+    ]);
 
     const configs: Record<string, unknown> = {};
     for (const entry of configEntries) {

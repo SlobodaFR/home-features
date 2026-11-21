@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { FeatureFlag } from '../../../domain/feature-flag/feature-flag';
 import { FeatureFlagRepository } from '../../../domain/feature-flag/feature-flag.repository';
 import { FeatureFlagOrmEntity } from '../entities/feature-flag.orm-entity';
@@ -33,14 +33,23 @@ export class TypeOrmFeatureFlagRepository extends FeatureFlagRepository {
   }
 
   async save(flag: FeatureFlag): Promise<void> {
+    // last_evaluated_at is left out on purpose: a UI save must not overwrite a newer evaluation.
     await this.repository.save({
       id: flag.id,
       appId: flag.appId,
       key: flag.key,
       name: flag.name,
       description: flag.description,
+      clientExposed: flag.clientExposed,
       createdAt: flag.createdAt,
     });
+  }
+
+  async touchLastEvaluatedAt(ids: string[], at: Date): Promise<void> {
+    if (ids.length === 0) {
+      return;
+    }
+    await this.repository.update({ id: In(ids) }, { lastEvaluatedAt: at });
   }
 
   async delete(id: string): Promise<void> {
@@ -55,6 +64,8 @@ function toDomain(row: FeatureFlagOrmEntity): FeatureFlag {
     key: row.key,
     name: row.name,
     description: row.description,
+    clientExposed: row.clientExposed,
+    lastEvaluatedAt: row.lastEvaluatedAt ? new Date(row.lastEvaluatedAt) : null,
     createdAt: new Date(row.createdAt),
   });
 }

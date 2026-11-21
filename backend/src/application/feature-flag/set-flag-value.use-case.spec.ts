@@ -57,6 +57,7 @@ class InMemoryFeatureFlagRepository extends FeatureFlagRepository {
     return null;
   }
   async save(): Promise<void> {}
+  async touchLastEvaluatedAt(): Promise<void> {}
   async delete(): Promise<void> {}
 }
 
@@ -118,6 +119,8 @@ const FLAG = FeatureFlag.create({
   key: 'new-checkout-flow',
   name: 'New checkout flow',
   description: null,
+  clientExposed: false,
+  lastEvaluatedAt: null,
   createdAt: new Date('2026-01-01'),
 });
 

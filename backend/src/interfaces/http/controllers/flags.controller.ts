@@ -15,7 +15,10 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '../decorators/current-user.decorator';
-import { SaveFeatureFlagDto } from '../dto/save-feature-flag.dto';
+import {
+  DeleteFeatureFlagDto,
+  UpdateFeatureFlagDto,
+} from '../dto/save-feature-flag.dto';
 import { SetFlagValueDto } from '../dto/set-flag-value.dto';
 
 @Controller('flags')
@@ -29,7 +32,7 @@ export class FlagsController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() dto: SaveFeatureFlagDto,
+    @Body() dto: UpdateFeatureFlagDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.updateFeatureFlag.execute(
@@ -37,7 +40,8 @@ export class FlagsController {
       {
         key: dto.key,
         name: dto.name,
-        description: dto.description ?? null,
+        description: dto.description,
+        clientExposed: dto.clientExposed,
       },
       user.id,
     );
@@ -45,8 +49,14 @@ export class FlagsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.deleteFeatureFlag.execute(id, user.id);
+  remove(
+    @Param('id') id: string,
+    // No body at all is allowed (ValidationPipe turns it into an empty DTO): a flag that is off
+    // everywhere needs no confirmation. Keep the plain class type so the DTO is validated.
+    @Body() dto: DeleteFeatureFlagDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.deleteFeatureFlag.execute(id, dto.confirm, user.id);
   }
 
   @Put(':id/values/:environmentId')

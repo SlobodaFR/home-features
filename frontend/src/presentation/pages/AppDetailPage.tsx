@@ -10,6 +10,11 @@ import {
   environmentNameOf,
 } from '../../domain/api-key';
 import { ConfigValueType } from '../../domain/config-entry';
+import {
+  deletionWarning,
+  FeatureFlagWithValues,
+  lastEvaluatedLabel,
+} from '../../domain/feature-flag';
 import { slugify } from '../../domain/slugify';
 import { apiClient } from '../../infrastructure/api-client';
 
@@ -97,9 +102,50 @@ export function AppDetailPage() {
     await refresh();
   }
 
-  async function handleDeleteFlag(id: string, name: string) {
-    if (!window.confirm(`Delete flag "${name}"?`)) return;
-    await apiClient.deleteFeatureFlag(id);
+  async function handleDeleteFlag(flag: FeatureFlagWithValues) {
+    const warning = deletionWarning(flag, environments);
+    let confirm: string | undefined;
+    if (warning) {
+      const typed = window.prompt(warning);
+      if (typed === null) return;
+      if (typed !== flag.key) {
+        window.alert('The key does not match: the flag was not deleted.');
+        return;
+      }
+      confirm = typed;
+    } else if (
+      !window.confirm(
+        `Delete flag "${flag.name}" (${lastEvaluatedLabel(flag.lastEvaluatedAt)})?`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await apiClient.deleteFeatureFlag(flag.id, confirm);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Failed to delete');
+      return;
+    }
+    await refresh();
+  }
+
+  async function handleToggleClientExposed(
+    flag: FeatureFlagWithValues,
+    clientExposed: boolean,
+  ) {
+    if (
+      clientExposed &&
+      !window.confirm(
+        `Expose "${flag.key}" to web keys? Browsers behind a web key will see its value.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await apiClient.updateFeatureFlag(flag.id, { clientExposed });
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Failed to update');
+    }
     await refresh();
   }
 
@@ -260,6 +306,12 @@ export function AppDetailPage() {
                     {env.name}
                   </th>
                 ))}
+                <th
+                  className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md"
+                  title="Visible to web API keys (browser-facing)"
+                >
+                  Client
+                </th>
                 <th></th>
               </tr>
             </thead>
@@ -272,6 +324,9 @@ export function AppDetailPage() {
                     </div>
                     <div className="font-body-sm text-body-sm text-mute">
                       {flag.key}
+                    </div>
+                    <div className="font-body-sm text-body-sm text-mute">
+                      {lastEvaluatedLabel(flag.lastEvaluatedAt)}
                     </div>
                   </td>
                   {environments.map((env) => {
@@ -294,10 +349,20 @@ export function AppDetailPage() {
                       </td>
                     );
                   })}
+                  <td className="py-sm px-md">
+                    <input
+                      type="checkbox"
+                      aria-label={`Expose ${flag.key} to web keys`}
+                      checked={flag.clientExposed}
+                      onChange={(e) =>
+                        void handleToggleClientExposed(flag, e.target.checked)
+                      }
+                    />
+                  </td>
                   <td className="py-sm">
                     <button
                       type="button"
-                      onClick={() => void handleDeleteFlag(flag.id, flag.name)}
+                      onClick={() => void handleDeleteFlag(flag)}
                       className="font-label-caps text-label-caps text-error border-b border-error uppercase"
                     >
                       Delete
