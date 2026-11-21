@@ -7,6 +7,7 @@
     "start": "node dist/main.js",
     "start:dev": "tsc -p tsconfig.build.json && node --watch dist/main.js",
     "start:prod": "node dist/main.js",
+    "cli:set-flag": "node dist/cli/set-flag.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",

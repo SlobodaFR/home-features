@@ -5,7 +5,8 @@ import type { BetterSqlite3Driver } from 'typeorm/driver/better-sqlite3/BetterSq
 const MAX_WAIT_TICKS = 10_000;
 
 /**
- * Runs `work` as one synchronous better-sqlite3 transaction.
+ * Runs `work` as one synchronous better-sqlite3 transaction. `work` must be synchronous: the
+ * transaction commits as soon as it returns.
  *
  * TypeORM's better-sqlite3 driver shares a single connection and does not serialize its async
  * transactions (repository.save() opens one): queries of concurrent requests interleave at the
@@ -26,5 +27,8 @@ export async function runSqliteTransaction<T>(
     }
     await new Promise((resolve) => setImmediate(resolve));
   }
-  return db.transaction(() => work(db))();
+  // BEGIN IMMEDIATE: take the write lock up front. A deferred transaction that reads then writes
+  // fails at once with "database is locked" when another process (the CLI, the server) writes,
+  // because SQLite skips the busy handler on a lock upgrade; IMMEDIATE waits for the busy timeout.
+  return db.transaction(() => work(db)).immediate();
 }

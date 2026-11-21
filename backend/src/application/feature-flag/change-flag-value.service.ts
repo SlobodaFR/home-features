@@ -4,7 +4,10 @@ import { Environment } from '../../domain/environment/environment';
 import { FeatureFlag } from '../../domain/feature-flag/feature-flag';
 import { FlagValue } from '../../domain/feature-flag/flag-value';
 import { FlagValueChangeSource } from '../../domain/feature-flag/flag-value-change';
-import { FlagValueRepository } from '../../domain/feature-flag/flag-value.repository';
+import {
+  FlagValueRepository,
+  RecordedFlagValue,
+} from '../../domain/feature-flag/flag-value.repository';
 import { FlagAuditLog } from './flag-audit-log';
 
 export interface FlagValueActor {
@@ -31,21 +34,20 @@ export class ChangeFlagValueService {
     environment: Environment,
     enabled: boolean,
     actor: FlagValueActor,
-  ): Promise<FlagValue> {
-    const { value, change } =
-      await this.flagValueRepository.upsertRecordingChange(
-        FlagValue.create({
-          id: randomUUID(),
-          flagId: flag.id,
-          environmentId: environment.id,
-          enabled,
-          updatedAt: new Date(),
-        }),
-        { actor: actor.name, source: actor.source },
-      );
-    if (change) {
-      this.auditLog.valueChanged(flag, change, actor.identity);
+  ): Promise<RecordedFlagValue> {
+    const recorded = await this.flagValueRepository.upsertRecordingChange(
+      FlagValue.create({
+        id: randomUUID(),
+        flagId: flag.id,
+        environmentId: environment.id,
+        enabled,
+        updatedAt: new Date(),
+      }),
+      { actor: actor.name, source: actor.source },
+    );
+    if (recorded.change) {
+      this.auditLog.valueChanged(flag, recorded.change, actor.identity);
     }
-    return value;
+    return recorded;
   }
 }
