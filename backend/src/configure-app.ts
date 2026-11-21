@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { readOfrepBody } from './interfaces/http/ofrep/ofrep-body';
 import { applySecurityHeaders } from './interfaces/http/security-headers';
 
 /**
@@ -23,5 +24,7 @@ export function configureApp(
   // /healthz stays at the root: Docker HEALTHCHECK and Caddy (which blocks it) know that path.
   app.setGlobalPrefix('api', { exclude: ['healthz'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // Before Nest's JSON parser (registered at init): OFREP answers bad bodies in its own format.
+  app.use('/api/ofrep', readOfrepBody);
   app.use(cookieParser());
 }
