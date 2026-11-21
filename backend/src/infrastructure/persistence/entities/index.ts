@@ -4,6 +4,7 @@ import { ConfigEntryOrmEntity } from './config-entry.orm-entity';
 import { ConfigValueOrmEntity } from './config-value.orm-entity';
 import { EnvironmentOrmEntity } from './environment.orm-entity';
 import { FeatureFlagOrmEntity } from './feature-flag.orm-entity';
+import { FlagValueChangeOrmEntity } from './flag-value-change.orm-entity';
 import { FlagValueOrmEntity } from './flag-value.orm-entity';
 import { RevokedSessionOrmEntity } from './revoked-session.orm-entity';
 import { UserOrmEntity } from './user.orm-entity';
@@ -19,4 +20,5 @@ export const ENTITIES = [
   ConfigEntryOrmEntity,
   ConfigValueOrmEntity,
   ApiKeyOrmEntity,
+  FlagValueChangeOrmEntity,
 ];
