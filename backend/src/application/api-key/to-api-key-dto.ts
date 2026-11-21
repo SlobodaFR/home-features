@@ -5,6 +5,8 @@ export function toApiKeyDto(apiKey: ApiKey): ApiKeyDto {
   return {
     id: apiKey.id,
     appId: apiKey.appId,
+    environmentId: apiKey.environmentId,
+    scope: apiKey.scope,
     name: apiKey.name,
     createdAt: apiKey.createdAt.toISOString(),
     lastUsedAt: apiKey.lastUsedAt ? apiKey.lastUsedAt.toISOString() : null,

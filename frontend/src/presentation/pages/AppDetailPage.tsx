@@ -2,7 +2,13 @@ import { FormEvent, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useApiKeys } from '../../application/use-api-keys';
 import { useAppOverview } from '../../application/use-app-overview';
-import { ApiKeyWithSecret } from '../../domain/api-key';
+import {
+  API_KEY_SCOPES,
+  ApiKeyScope,
+  ApiKeyWithSecret,
+  apiKeyScopeHint,
+  environmentNameOf,
+} from '../../domain/api-key';
 import { ConfigValueType } from '../../domain/config-entry';
 import { slugify } from '../../domain/slugify';
 import { apiClient } from '../../infrastructure/api-client';
@@ -25,6 +31,8 @@ export function AppDetailPage() {
   );
 
   const [apiKeyName, setApiKeyName] = useState('');
+  const [apiKeyEnvironmentId, setApiKeyEnvironmentId] = useState('');
+  const [apiKeyScope, setApiKeyScope] = useState<ApiKeyScope>('server');
   const [createdApiKey, setCreatedApiKey] = useState<ApiKeyWithSecret | null>(
     null,
   );
@@ -66,7 +74,15 @@ export function AppDetailPage() {
 
   async function handleDeleteEnvironment(id: string, name: string) {
     if (!window.confirm(`Delete environment "${name}"?`)) return;
-    await apiClient.deleteEnvironment(id);
+    try {
+      await apiClient.deleteEnvironment(id);
+    } catch (err) {
+      // 409 while API keys are bound to it.
+      window.alert(
+        err instanceof Error ? err.message : 'Failed to delete environment',
+      );
+      return;
+    }
     await refresh();
   }
 
@@ -130,9 +146,17 @@ export function AppDetailPage() {
 
   async function handleCreateApiKey(event: FormEvent) {
     event.preventDefault();
-    const created = await apiKeys.createApiKey(apiKeyName);
-    setCreatedApiKey(created);
-    setApiKeyName('');
+    try {
+      const created = await apiKeys.createApiKey({
+        name: apiKeyName,
+        environmentId: apiKeyEnvironmentId || environments[0]?.id || '',
+        scope: apiKeyScope,
+      });
+      setCreatedApiKey(created);
+      setApiKeyName('');
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Failed to create key');
+    }
   }
 
   async function handleDeleteApiKey(id: string, name: string) {
@@ -429,10 +453,10 @@ export function AppDetailPage() {
           API keys
         </h2>
         <p className="font-body-sm text-body-sm text-mute mb-md">
-          Use an API key to fetch this app's flags and configs from other
-          services via{' '}
-          <code>GET /api/v1/flags-and-configs?environment=&lt;slug&gt;</code>{' '}
-          with an <code>Authorization: Bearer &lt;key&gt;</code> header.
+          An API key reads one environment of this app, sent as an{' '}
+          <code>Authorization: Bearer hf_…</code> header. A <em>server</em> key
+          sees every flag and config; a <em>web</em> key (behind a browser
+          proxy) sees only the client-exposed flags.
         </p>
 
         {createdApiKey && (
@@ -470,6 +494,12 @@ export function AppDetailPage() {
                   Name
                 </th>
                 <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
+                  Environment
+                </th>
+                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
+                  Scope
+                </th>
+                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
                   Created
                 </th>
                 <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
@@ -483,6 +513,15 @@ export function AppDetailPage() {
                 <tr key={apiKey.id} className="border-t border-hairline">
                   <td className="py-sm font-body-md text-body-md text-ink">
                     {apiKey.name}
+                  </td>
+                  <td className="py-sm px-md font-body-sm text-body-sm text-ink">
+                    {environmentNameOf(apiKey.environmentId, environments)}
+                  </td>
+                  <td
+                    className="py-sm px-md font-body-sm text-body-sm text-ink"
+                    title={apiKeyScopeHint(apiKey.scope)}
+                  >
+                    {apiKey.scope}
                   </td>
                   <td className="py-sm px-md font-body-sm text-body-sm text-mute">
                     {new Date(apiKey.createdAt).toLocaleString()}
@@ -520,9 +559,43 @@ export function AppDetailPage() {
             onChange={(e) => setApiKeyName(e.target.value)}
             required
           />
+          <select
+            aria-label="Environment"
+            className="border border-hairline rounded px-md py-sm"
+            value={apiKeyEnvironmentId || environments[0]?.id || ''}
+            onChange={(e) => setApiKeyEnvironmentId(e.target.value)}
+            required
+          >
+            {environments.map((env) => (
+              <option key={env.id} value={env.id}>
+                {env.name}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Scope"
+            className="border border-hairline rounded px-md py-sm"
+            value={apiKeyScope}
+            title={apiKeyScopeHint(apiKeyScope)}
+            onChange={(e) => {
+              const selected = API_KEY_SCOPES.find(
+                (scope) => scope === e.target.value,
+              );
+              if (selected) {
+                setApiKeyScope(selected);
+              }
+            }}
+          >
+            {API_KEY_SCOPES.map((scope) => (
+              <option key={scope} value={scope}>
+                {scope}
+              </option>
+            ))}
+          </select>
           <button
             type="submit"
-            className="bg-ink text-surface px-xl py-md rounded-full font-button-md"
+            disabled={environments.length === 0}
+            className="bg-ink text-surface px-xl py-md rounded-full font-button-md disabled:opacity-50"
           >
             Generate key
           </button>

@@ -1,4 +1,4 @@
-import { ApiKey, ApiKeyWithSecret } from '../domain/api-key';
+import { ApiKey, ApiKeyScope, ApiKeyWithSecret } from '../domain/api-key';
 import { App } from '../domain/app';
 import { ConfigEntryWithValues, ConfigValueType } from '../domain/config-entry';
 import { Environment } from '../domain/environment';
@@ -68,6 +68,8 @@ export interface SaveConfigEntryPayload {
 
 export interface SaveApiKeyPayload {
   name: string;
+  environmentId: string;
+  scope: ApiKeyScope;
 }
 
 export const apiClient = {

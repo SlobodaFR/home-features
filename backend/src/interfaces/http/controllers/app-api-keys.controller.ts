@@ -25,6 +25,10 @@ export class AppApiKeysController {
     @Body() dto: SaveApiKeyDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.createApiKey.execute(appId, dto.name, user.id);
+    return this.createApiKey.execute(
+      appId,
+      { name: dto.name, environmentId: dto.environmentId, scope: dto.scope },
+      user.id,
+    );
   }
 }
