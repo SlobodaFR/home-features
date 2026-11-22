@@ -168,6 +168,12 @@ home-features does not drive itself: it has neither `FEATURES_OFREP_URL` nor `FE
 only the emergency pins `FEATURES_PIN_<FLAG_KEY_IN_UPPER_SNAKE_CASE>=true|false` and the code
 defaults apply (e.g. `FEATURES_PIN_AUTH_VERIFY_TOKEN_CLAIMS=true`). A pin needs a container restart.
 
+Flags read by home-features itself (all default to `false` in the code):
+
+| Key                        | Effect                                                                                                                                                                                                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth-verify-token-claims` | `true`: `JwksAccessTokenVerifier` also verifies the audience (`AUTH_CLIENT_ID`), the issuer (origin of `AUTH_SERVICE_URL`) and the algorithm (`RS256`) of access tokens. `false`: signature only (historical behaviour). Evaluated on every verification, never blocking. |
+
 ### Emergency switch
 
 Without the UI or home-auth, on the VPS:
