@@ -5,6 +5,13 @@ import { readOfrepBody } from './interfaces/http/ofrep/ofrep-body';
 import { applySecurityHeaders } from './interfaces/http/security-headers';
 
 /**
+ * Nest creation options shared by main.ts and the HTTP tests (webhook, OFREP). `rawBody` keeps the exact bytes of the
+ * body (req.rawBody): the logout webhook from home-auth is signed over what was sent, not over
+ * its re-serialization (contract PC7).
+ */
+export const nestApplicationOptions = { rawBody: true } as const;
+
+/**
  * HTTP setup shared by main.ts and the tests. There is deliberately no CORS: the SPA is served by
  * this service (same origin) and the other apps call the public API server-to-server.
  */

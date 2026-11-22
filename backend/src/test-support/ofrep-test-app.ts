@@ -4,7 +4,7 @@ import { Test } from '@nestjs/testing';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { configureApp } from '../configure-app';
+import { configureApp, nestApplicationOptions } from '../configure-app';
 import {
   generateApiKeyToken,
   hashApiKeyToken,
@@ -104,7 +104,9 @@ export async function ofrepTestApp(): Promise<OfrepFixture> {
       },
     ],
   }).compile();
-  const app = moduleRef.createNestApplication<NestExpressApplication>();
+  const app = moduleRef.createNestApplication<NestExpressApplication>(
+    nestApplicationOptions,
+  );
   configureApp(app, { TRUST_PROXY_HOPS: '1' });
   await app.init();
   const dataSource = moduleRef.get(DataSource);

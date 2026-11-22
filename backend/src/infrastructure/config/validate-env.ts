@@ -3,6 +3,7 @@ export const DEV_PSEUDONYM_SECRET =
   'dev-only-pseudonym-secret-not-for-production';
 
 const MIN_SECRET_BYTES = 32;
+const SIGNING_SECRET_FORMAT = /^[0-9a-f]{64}$/;
 
 /** Variables the code cannot run without in production (read with getOrThrow). */
 const REQUIRED_IN_PRODUCTION = [
@@ -34,6 +35,19 @@ export function validateEnv(
     (typeof env.DATABASE_PATH !== 'string' || env.DATABASE_PATH.trim() === '')
   ) {
     throw new Error('DATABASE_PATH must not be empty');
+  }
+
+  // Optional, but a malformed secret would be ignored silently: the webhook would fall back to the
+  // legacy ?secret=. Checked outside production too.
+  const signingSecret = env.AUTH_WEBHOOK_SIGNING_SECRET;
+  if (
+    typeof signingSecret === 'string' &&
+    signingSecret !== '' &&
+    !SIGNING_SECRET_FORMAT.test(signingSecret)
+  ) {
+    throw new Error(
+      'AUTH_WEBHOOK_SIGNING_SECRET must be exactly 64 lowercase hexadecimal characters, without whitespace (the secret shown by home-auth)',
+    );
   }
 
   const secret =
