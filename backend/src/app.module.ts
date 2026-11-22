@@ -6,6 +6,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { join } from 'path';
 import { validateEnv } from './infrastructure/config/validate-env';
+import { FeatureFlagsModule } from './infrastructure/feature-flags/feature-flags.module';
 import { loggerParams } from './infrastructure/logging/logger.config';
 import { serveStaticOptions } from './static-assets';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
@@ -30,6 +31,7 @@ import { throttlerOptions } from './interfaces/http/throttling';
         ),
     }),
     ThrottlerModule.forRoot(throttlerOptions),
+    FeatureFlagsModule,
     DatabaseModule,
     ServeStaticModule.forRoot(serveStaticOptions(join(__dirname, 'public'))),
     AuthModule,

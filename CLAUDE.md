@@ -10,8 +10,10 @@ an API key bound to one app, one environment and a scope.
 
 - **Backend**: NestJS 12 + Express 5, TypeORM + better-sqlite3 (WAL mode, replicated by Litestream),
   class-validator / class-transformer, cookie-parser, jose (JWKS), @nestjs/config,
-  @nestjs/serve-static, @nestjs/throttler, helmet, nestjs-pino. OpenFeature SDKs and OFREP providers
-  are devDependencies (contract tests only). TypeScript 7, compiled by `tsc -p tsconfig.build.json`
+  @nestjs/serve-static, @nestjs/throttler, helmet, nestjs-pino. `@openfeature/server-sdk` +
+  `@openfeature/ofrep-provider` (the `FeatureFlags` port, a no-op here: home-features does not drive
+  itself, only `FEATURES_PIN_<KEY>` pins apply); the web SDK and web provider are devDependencies
+  (contract tests only). TypeScript 7, compiled by `tsc -p tsconfig.build.json`
   (no Nest CLI). Clean architecture: `domain / application / infrastructure / interfaces`.
 - **Frontend**: Vite + React 18 + TypeScript + Tailwind CSS, react-router-dom. Clean architecture:
   `domain / application / infrastructure / presentation`.
