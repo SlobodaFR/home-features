@@ -136,6 +136,18 @@ describe('AuthenticateLogoutWebhookUseCase', () => {
       expect(flags.asked).toEqual([]);
     });
 
+    it('refuses the replay before the raw-body check (body not parsed, valid ?secret=)', async () => {
+      const uc = useCase();
+      expect(await uc.execute({ ...signed() })).toBe(true);
+      expect(
+        await uc.execute({
+          headers: signed().headers,
+          rawBody: undefined,
+          querySecret: LEGACY_SECRET,
+        }),
+      ).toBe(false);
+    });
+
     it('refuses a replayed id sent alone (other headers missing) even with a valid ?secret=', async () => {
       const uc = useCase();
       await uc.execute({ ...signed() });
