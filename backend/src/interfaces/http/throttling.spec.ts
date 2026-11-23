@@ -18,6 +18,7 @@ import {
 } from '../../domain/api-key/api-key-token';
 import { ENTITIES } from '../../infrastructure/persistence/entities';
 import { MIGRATIONS } from '../../infrastructure/persistence/migrations';
+import { FakeTelemetryModule } from '../../test-support/fake-telemetry';
 import { testConfigModule } from '../../test-support/test-config.module';
 import { HealthController } from './controllers/health.controller';
 import { ApiKeyGuard, type ApiKeyRequest } from './guards/api-key.guard';
@@ -76,6 +77,7 @@ describe('rate limiting', () => {
           migrationsRun: true,
         }),
         ThrottlerModule.forRoot(throttlerOptions),
+        FakeTelemetryModule,
         ProbeModule,
         HealthModule,
       ],

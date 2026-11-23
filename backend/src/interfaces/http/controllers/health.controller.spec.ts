@@ -15,6 +15,7 @@ import request from 'supertest';
 import { configureApp } from '../../../configure-app';
 import { RuntimeHealthMonitor } from '../../../infrastructure/observability/runtime-health.monitor';
 import { serveStaticOptions } from '../../../static-assets';
+import { FakeTelemetryModule } from '../../../test-support/fake-telemetry';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { HealthModule } from '../modules/health.module';
 
@@ -45,6 +46,7 @@ describe('GET /healthz', () => {
     writeFileSync(join(root, 'index.html'), '<html>SPA</html>');
     @Module({
       imports: [
+        FakeTelemetryModule,
         ServeStaticModule.forRoot(serveStaticOptions(root)),
         HealthModule,
       ],

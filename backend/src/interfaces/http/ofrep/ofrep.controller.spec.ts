@@ -40,6 +40,25 @@ describe('OFREP over HTTP', () => {
     expect(res.headers['content-type']).toMatch(/^application\/json/);
   }
 
+  describe('telemetry', () => {
+    it('reports no http_request for the polled evaluation routes, whatever the outcome', async () => {
+      await post(`${SINGLE}/on-flag`).send({});
+      await post(`${SINGLE}/missing-flag`).send({});
+      await post(SINGLE).send({});
+      await post(SINGLE, null).send({});
+
+      expect(fixture.telemetry.captured).toEqual([]);
+    });
+
+    it('never lets the API key reach an event', async () => {
+      await post(`${SINGLE}/on-flag`).send({ context: { targetingKey: 'u1' } });
+
+      expect(JSON.stringify(fixture.telemetry.captured)).not.toContain(
+        fixture.keys.server,
+      );
+    });
+  });
+
   describe('single flag', () => {
     it('evaluates an enabled flag: 200 STATIC on', async () => {
       const res = await post(`${SINGLE}/on-flag`).send({

@@ -10,6 +10,7 @@ import { FeatureFlagsModule } from './infrastructure/feature-flags/feature-flags
 import { loggerParams } from './infrastructure/logging/logger.config';
 import { serveStaticOptions } from './static-assets';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
+import { TelemetryModule } from './infrastructure/telemetry/telemetry.module';
 import { SameOriginGuard } from './interfaces/http/guards/same-origin.guard';
 import { AuthModule } from './interfaces/http/modules/auth.module';
 import { HealthModule } from './interfaces/http/modules/health.module';
@@ -32,6 +33,7 @@ import { throttlerOptions } from './interfaces/http/throttling';
     }),
     ThrottlerModule.forRoot(throttlerOptions),
     FeatureFlagsModule,
+    TelemetryModule,
     DatabaseModule,
     ServeStaticModule.forRoot(serveStaticOptions(join(__dirname, 'public'))),
     AuthModule,
