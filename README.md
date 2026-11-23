@@ -40,36 +40,98 @@ OAuth2 Authorization Code flow:
   auth-service) and `refresh_token` (~30 days). `JwtAuthGuard` verifies the access token via JWKS
   (`/.well-known/jwks.json`) and silently refreshes if needed.
 - `POST /api/auth/logout` only clears the local cookies (no global logout).
-- `POST /api/auth/disconnect?secret=AUTH_WEBHOOK_SECRET` is the `logoutWebhookUrl` registered with
-  auth-service (`{ "userId": "..." }`): called on global logout, it marks the user as revoked
-  (current timestamp); any access token issued before that instant is then rejected by
-  `JwtAuthGuard`.
+- `POST /api/auth/disconnect` is the `logoutWebhookUrl` registered with auth-service
+  (`{ "userId": "..." }`): called on global logout, it marks the user as revoked (current
+  timestamp); any access token issued before that instant is then rejected by `JwtAuthGuard`. It is
+  authenticated by home-auth's **signature** (contract PC7, below) or, during the transition, by the
+  legacy `?secret=AUTH_WEBHOOK_SECRET`.
+
+### Signed logout webhook (double acceptance)
+
+Headers sent by home-auth: `X-Auth-Webhook-Id` (uuid v4), `X-Auth-Webhook-Timestamp` (unix seconds),
+`X-Auth-Webhook-Signature: v1=<hex>[,v1=<hex>]` with
+`hex = HMAC-SHA256(secret, id + "." + timestamp + "." + rawBody)`; the key is the secret string
+(64 hex characters, UTF-8, not its decoded bytes) and `rawBody` the bytes received.
+
+Verification (`backend/src/domain/auth/webhook-signature.ts`):
+
+1. `|now - timestamp| <= 120 s`;
+2. each `v1=` entry is decoded (hex, 32 bytes; any invalid format: 401) and compared with the
+   recomputed HMAC by `timingSafeEqual`; one matching entry is enough (two entries during the 24 h
+   overlap after the secret is regenerated);
+3. an accepted `id` is refused if it comes back within 10 minutes (process memory: a restart
+   forgets it; only an `id` with a valid signature is remembered). Replay is **strict**: as soon as
+   an `X-Auth-Webhook-*` header is present and the `id` was already seen, the request is refused
+   (401) even with a valid `?secret=`.
+
+`rawBody`: `main.ts` creates the application with `rawBody: true` (`nestApplicationOptions`, shared
+with the HTTP tests); `req.rawBody` holds the exact bytes of the JSON body.
+
+Double acceptance (`AuthenticateLogoutWebhookUseCase`):
+
+- no signature header (`X-Auth-Webhook-Id`, `-Timestamp` and `-Signature` all empty): legacy
+  `?secret=` compared with `timingSafeEqual`, while the flag `auth-webhook-require-signature` is
+  `false`;
+- headers present and valid signature: accepted; `id` already seen: refused (401), with no fallback
+  to `?secret=`;
+- headers present but signature invalid (format, window, hmac) or not checkable (no
+  `AUTH_WEBHOOK_SIGNING_SECRET`, raw body unavailable): fallback to the legacy `?secret=` (flag
+  `false`);
+- flag `true`: the signature is mandatory and `?secret=` is no longer accepted; without a configured
+  `AUTH_WEBHOOK_SIGNING_SECRET` nothing is accepted (fail closed: do not turn the flag on before the
+  secret is in place).
+
+Acceptances are logged (never the secret, the signature or the `id`), one line per reason every
+5 minutes: INFO `signature`; WARN `legacy ?secret=` with the reason among `no-signature-headers`,
+`missing-signing-secret`, `format`, `window`, `hmac`, `raw-body-unavailable`. This lets you check the
+switch before turning the flag on (no more WARN = flag can be turned on).
+
+`AUTH_WEBHOOK_SIGNING_SECRET` (optional, exactly 64 **lowercase** hex characters, 1Password
+`FEATURES_AUTH_WEBHOOK_SIGNING_SECRET`) is the secret shown once by home-auth's admin
+("Regenerate"). Absent or empty: only the legacy path exists. Uppercase, whitespace or wrong length:
+the service refuses to start (in every environment).
+home-features reads this flag through its no-op adapter: only a pin
+(`FEATURES_PIN_AUTH_WEBHOOK_REQUIRE_SIGNATURE=true`) or a new code default turns it on.
+
+Fixed test vectors of the contract (published by home-auth, copied into
+`backend/src/domain/auth/webhook-signature.spec.ts`):
+
+|     | secret | id                                     | timestamp    | body                  | HMAC (hex)                                                         |
+| --- | ------ | -------------------------------------- | ------------ | --------------------- | ------------------------------------------------------------------ |
+| 1   | `S1`   | `3b241101-e2bb-4255-8caf-4136c566a962` | `1700000000` | `{"userId":"u1"}`     | `41294c53497c1d18871786b2d5c3ec091e6b357638e7104d826de50af8813242` |
+| 2   | `S2`   | `3b241101-e2bb-4255-8caf-4136c566a962` | `1700000000` | `{"userId":"u1"}`     | `89de6c4652b33d864427b3091771ed8b9266a99b3bf915b126eb4655a2dce09f` |
+| 3   | `S1`   | `9b2f0f6e-8d3a-4f6b-9c1e-2a7d5e4c1b30` | `1700000123` | `{"userId":"4b8f-é"}` | `d9a2c8cec34058ebb100f8b454ba46b1214cf777000d9aab00dda91205d5a3ac` |
+
+- `S1` = `000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f`
+- `S2` = `ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100`
+- Cross-check: `printf '%s' '3b241101-e2bb-4255-8caf-4136c566a962.1700000000.{"userId":"u1"}' | openssl dgst -sha256 -hmac <S1>`
 
 This is the same auth integration pattern as the sibling app
 [home-budget](https://github.com/SlobodaFR/home-budget) — see its README for more details.
 
 ## Environment variables (backend)
 
-| Variable                  | Required | Default                    | Description                                                                                                                                                                    |
-| ------------------------- | -------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `AUTH_SERVICE_URL`        | yes      | -                          | Base URL of the central auth service (`https://auth.sloboda.fr`).                                                                                                              |
-| `AUTH_CLIENT_ID`          | yes      | -                          | OAuth2 client id registered with auth-service.                                                                                                                                 |
-| `AUTH_CLIENT_SECRET`      | yes      | -                          | Corresponding OAuth2 client secret.                                                                                                                                            |
-| `AUTH_WEBHOOK_SECRET`     | yes      | -                          | Shared secret for the `POST /api/auth/disconnect` webhook.                                                                                                                     |
-| `FRONTEND_URL`            | prod     | -                          | Public base URL (`https://` in production): OAuth2 `redirect_uri` and the only trusted `Origin` for mutations (CSRF guard). No CORS: the SPA is served by this service.        |
-| `PSEUDONYM_SECRET`        | prod     | dev value                  | Random secret (>= 32 bytes) used to pseudonymize user ids in logs (HMAC). Refused if missing or weak in production.                                                            |
-| `DATABASE_PATH`           | no       | `data/features.sqlite`     | Path to the SQLite file. Must not be empty.                                                                                                                                    |
-| `TRUST_PROXY_HOPS`        | no       | `0`                        | Reverse-proxy hops to trust for `X-Forwarded-For` (`1` behind Caddy, set by the deploy workflow).                                                                              |
-| `NODE_ENV`                | no       | -                          | `production` enables the `secure` flag on session cookies.                                                                                                                     |
-| `PORT`                    | no       | `3002`                     | Port the server listens on.                                                                                                                                                    |
-| `POSTHOG_API_KEY`         | no       | -                          | PostHog project key for the operational telemetry (`runtime_health` every 60 s, `http_request` per admin/UI route). Absent: telemetry is a no-op, startup never depends on it. |
-| `POSTHOG_HOST`            | no       | `https://eu.i.posthog.com` | PostHog ingestion host.                                                                                                                                                        |
-| `MINIO_ENDPOINT`          | no       | -                          | MinIO (S3-compatible) server URL.                                                                                                                                              |
-| `MINIO_BUCKET`            | no       | -                          | Destination bucket. If set, enables Litestream replication of the SQLite DB.                                                                                                   |
-| `MINIO_REPLICA_PATH`      | no       | `home-features`            | Replication path prefix in the bucket.                                                                                                                                         |
-| `MINIO_REGION`            | no       | `us-east-1`                | S3 region (required by the SDK, irrelevant for MinIO).                                                                                                                         |
-| `MINIO_ACCESS_KEY_ID`     | no       | -                          | MinIO access key.                                                                                                                                                              |
-| `MINIO_SECRET_ACCESS_KEY` | no       | -                          | MinIO secret key.                                                                                                                                                              |
+| Variable                      | Required | Default                    | Description                                                                                                                                                                                               |
+| ----------------------------- | -------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTH_SERVICE_URL`            | yes      | -                          | Base URL of the central auth service (`https://auth.sloboda.fr`).                                                                                                                                         |
+| `AUTH_CLIENT_ID`              | yes      | -                          | OAuth2 client id registered with auth-service.                                                                                                                                                            |
+| `AUTH_CLIENT_SECRET`          | yes      | -                          | Corresponding OAuth2 client secret.                                                                                                                                                                       |
+| `AUTH_WEBHOOK_SECRET`         | yes      | -                          | Shared secret for the `POST /api/auth/disconnect` webhook.                                                                                                                                                |
+| `AUTH_WEBHOOK_SIGNING_SECRET` | no       | -                          | Signing secret of the logout webhook (64 lowercase hex characters, shown once by home-auth's admin). Absent: only the legacy `?secret=` authenticates. 1Password: `FEATURES_AUTH_WEBHOOK_SIGNING_SECRET`. |
+| `FRONTEND_URL`                | prod     | -                          | Public base URL (`https://` in production): OAuth2 `redirect_uri` and the only trusted `Origin` for mutations (CSRF guard). No CORS: the SPA is served by this service.                                   |
+| `PSEUDONYM_SECRET`            | prod     | dev value                  | Random secret (>= 32 bytes) used to pseudonymize user ids in logs (HMAC). Refused if missing or weak in production.                                                                                       |
+| `DATABASE_PATH`               | no       | `data/features.sqlite`     | Path to the SQLite file. Must not be empty.                                                                                                                                                               |
+| `TRUST_PROXY_HOPS`            | no       | `0`                        | Reverse-proxy hops to trust for `X-Forwarded-For` (`1` behind Caddy, set by the deploy workflow).                                                                                                         |
+| `NODE_ENV`                    | no       | -                          | `production` enables the `secure` flag on session cookies.                                                                                                                                                |
+| `PORT`                        | no       | `3002`                     | Port the server listens on.                                                                                                                                                                               |
+| `POSTHOG_API_KEY`             | no       | -                          | PostHog project key for the operational telemetry (`runtime_health` every 60 s, `http_request` per admin/UI route). Absent: telemetry is a no-op, startup never depends on it.                            |
+| `POSTHOG_HOST`                | no       | `https://eu.i.posthog.com` | PostHog ingestion host.                                                                                                                                                                                   |
+| `MINIO_ENDPOINT`              | no       | -                          | MinIO (S3-compatible) server URL.                                                                                                                                                                         |
+| `MINIO_BUCKET`                | no       | -                          | Destination bucket. If set, enables Litestream replication of the SQLite DB.                                                                                                                              |
+| `MINIO_REPLICA_PATH`          | no       | `home-features`            | Replication path prefix in the bucket.                                                                                                                                                                    |
+| `MINIO_REGION`                | no       | `us-east-1`                | S3 region (required by the SDK, irrelevant for MinIO).                                                                                                                                                    |
+| `MINIO_ACCESS_KEY_ID`         | no       | -                          | MinIO access key.                                                                                                                                                                                         |
+| `MINIO_SECRET_ACCESS_KEY`     | no       | -                          | MinIO secret key.                                                                                                                                                                                         |
 
 Copy `backend/.env.example` to `backend/.env` and fill in the values. This file is read
 automatically by `ConfigModule` in dev, and can also be passed to `docker run --env-file`.
@@ -170,9 +232,10 @@ defaults apply (e.g. `FEATURES_PIN_AUTH_VERIFY_TOKEN_CLAIMS=true`). A pin needs 
 
 Flags read by home-features itself (all default to `false` in the code):
 
-| Key                        | Effect                                                                                                                                                                                                                                                                    |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `auth-verify-token-claims` | `true`: `JwksAccessTokenVerifier` also verifies the audience (`AUTH_CLIENT_ID`), the issuer (origin of `AUTH_SERVICE_URL`) and the algorithm (`RS256`) of access tokens. `false`: signature only (historical behaviour). Evaluated on every verification, never blocking. |
+| Key                              | Effect                                                                                                                                                                                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth-verify-token-claims`       | `true`: `JwksAccessTokenVerifier` also verifies the audience (`AUTH_CLIENT_ID`), the issuer (origin of `AUTH_SERVICE_URL`) and the algorithm (`RS256`) of access tokens. `false`: signature only (historical behaviour). Evaluated on every verification, never blocking. |
+| `auth-webhook-require-signature` | `true`: `POST /api/auth/disconnect` only accepts the `X-Auth-Webhook-*` signature (the legacy `?secret=` is refused). `false`: valid signature or legacy `?secret=`.                                                                                                      |
 
 ### Emergency switch
 

@@ -68,8 +68,9 @@ appended to `flag_value_changes` (old, new, actor, source `ui` | `cli`) in the v
 - Routes live under the `api` global prefix, except `GET /healthz` (internal, see below).
 - **Auth**: `access_token` / `refresh_token` cookies issued after the OAuth2 code flow with
   home-auth; `JwtAuthGuard` is global and verifies the access token against the JWKS, refreshing
-  the session when needed. `@Public()` opts a route out. `POST /api/auth/disconnect?secret=...` is
-  the logout webhook called by home-auth.
+  the session when needed. `@Public()` opts a route out. `POST /api/auth/disconnect` is the
+  logout webhook called by home-auth, authenticated by its `X-Auth-Webhook-*` HMAC signature or the
+  legacy `?secret=` (see README).
 - **OFREP** (`docs/ofrep.md`): `POST /api/ofrep/v1/evaluate/flags/{key}` and `/flags` (bulk, strong
   ETag over the environment id and the sorted `key=on|off|unset` lines, manual `304`, `Cache-Control: private,
   no-cache`). `@Public`, `@SkipSameOrigin`, `@SkipThrottle`, `ApiKeyGuard` (bearer only, never a
@@ -133,6 +134,7 @@ Validated at startup by `validateEnv` (production refuses to start on a missing 
 | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | `AUTH_SERVICE_URL`, `FRONTEND_URL`                            | required, `https://`                                                   |
 | `AUTH_CLIENT_ID`, `AUTH_CLIENT_SECRET`, `AUTH_WEBHOOK_SECRET` | required                                                               |
+| `AUTH_WEBHOOK_SIGNING_SECRET`                                 | optional, 64 lowercase hex characters (checked in every environment)   |
 | `PSEUDONYM_SECRET`                                            | required, at least 32 random bytes                                     |
 | `DATABASE_PATH`                                               | optional, never empty (image default)                                  |
 | `TRUST_PROXY_HOPS`, `PORT`                                    | integers; the image sets `PORT=3000`, deploy sets `TRUST_PROXY_HOPS=1` |
@@ -185,7 +187,7 @@ npm run typecheck              # tsc backend + frontend
   publishes and deploys.
 - Secrets live only in 1Password (`TECH/thomassloboda_home_secrets`), injected by `deploy-vps.yml`
   as `FEATURES_*` fields: `FEATURES_AUTH_CLIENT_ID`, `FEATURES_AUTH_SECRET`,
-  `FEATURES_AUTH_WEBHOOK_SECRET`, `FEATURES_FRONTEND_URL`, `FEATURES_DATABASE_PATH`,
+  `FEATURES_AUTH_WEBHOOK_SECRET`, `FEATURES_AUTH_WEBHOOK_SIGNING_SECRET`, `FEATURES_FRONTEND_URL`, `FEATURES_DATABASE_PATH`,
   `FEATURES_PSEUDONYM_SECRET`, `FEATURES_MINIO_REPLICA_PATH` (plus the shared VPS, `AUTH_BASE_URL`, MinIO and GitHub token fields).
   They must exist before the deploy job can succeed. `.dockerignore` keeps `.env` and
   `backend/data` out of the image.
