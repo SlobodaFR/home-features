@@ -48,9 +48,11 @@ COPY --from=backend-build /app/backend/package.json backend/package.json
 COPY backend/litestream.yml backend/litestream.yml
 COPY backend/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
-    && mkdir -p /app/backend/data
+    && mkdir -p /app/backend/data \
+    && chown node:node /app/backend /app/backend/data
 VOLUME ["/app/backend/data"]
 WORKDIR /app/backend
+USER node
 EXPOSE 3000
 # curl is purged from the image: use Node's fetch. /healthz is internal (blocked by Caddy).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
