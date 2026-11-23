@@ -88,6 +88,6 @@ reference adapter.
 
 `backend/src/interfaces/http/ofrep/ofrep.contract.spec.ts` runs the official SDKs
 (`@openfeature/server-sdk` + `@openfeature/ofrep-provider`, `@openfeature/web-sdk` +
-`@openfeature/ofrep-web-provider`, devDependencies) against the real HTTP server: true/false,
+`@openfeature/ofrep-web-provider`; the web ones are devDependencies) against the real HTTP server: true/false,
 DISABLED → code default, FLAG_NOT_FOUND → default, TYPE_MISMATCH, revoked key, server not
 answering within the timeout, bulk then `304` on polling, web-key filtering.

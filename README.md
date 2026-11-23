@@ -158,6 +158,14 @@ the reference adapter in home-auth does
 - A front end goes through a same-origin proxy in its own backend, with a `web` key; flags a
   browser may see are marked client-exposed here, never filtered by the consumer.
 
+### home-features as its own consumer
+
+home-features does not drive itself: it has neither `FEATURES_OFREP_URL` nor `FEATURES_API_KEY`
+(and the deploy workflow does not pass any), so its copy of the reference adapter
+(`backend/src/infrastructure/feature-flags/`, byte-identical to home-auth's) runs as a **no-op**:
+only the emergency pins `FEATURES_PIN_<FLAG_KEY_IN_UPPER_SNAKE_CASE>=true|false` and the code
+defaults apply (e.g. `FEATURES_PIN_AUTH_VERIFY_TOKEN_CLAIMS=true`). A pin needs a container restart.
+
 ### Emergency switch
 
 Without the UI or home-auth, on the VPS:
