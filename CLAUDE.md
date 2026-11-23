@@ -37,7 +37,8 @@ backend/src/
     config/                    # validateEnv (environment validated at startup)
     logging/                   # nestjs-pino config: serializers, redaction, whitelist err serializer;
                                # PinoFlagAuditLog (flag_value_changed line)
-    observability/             # RuntimeHealthMonitor (event-loop lag, memory) for /healthz
+    observability/             # RuntimeHealthMonitor (event-loop lag, memory) for /healthz + runtime_health
+    telemetry/                 # PostHogTelemetry (anonymous ops events, NOOP without POSTHOG_API_KEY), TelemetryModule
     persistence/               # ORM entities (entities/index.ts = ENTITIES), repositories,
                                # migrations/ (MIGRATIONS), SchemaGuard, DatabaseModule, data-source.ts,
                                # sqlite-transaction.ts (synchronous transactions, see Database)

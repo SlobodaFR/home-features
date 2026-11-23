@@ -1,4 +1,4 @@
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -12,12 +12,15 @@ import {
 import { AccessTokenVerifier } from '../domain/auth/access-token-verifier';
 import { OAuthClient } from '../domain/auth/oauth-client';
 import { RevokedSessionRepository } from '../domain/auth/revoked-session.repository';
+import { Telemetry } from '../domain/shared/telemetry';
 import { ENTITIES } from '../infrastructure/persistence/entities';
 import { MIGRATIONS } from '../infrastructure/persistence/migrations';
 import { JwtAuthGuard } from '../interfaces/http/guards/jwt-auth.guard';
 import { SameOriginGuard } from '../interfaces/http/guards/same-origin.guard';
+import { TelemetryInterceptor } from '../interfaces/http/telemetry.interceptor';
 import { OfrepModule } from '../interfaces/http/modules/ofrep.module';
 import { throttlerOptions } from '../interfaces/http/throttling';
+import { FakeTelemetry } from './fake-telemetry';
 import { testConfigModule } from './test-config.module';
 
 /** Any session work would be a bug on /ofrep: these stubs fail loudly if called. */
@@ -58,6 +61,8 @@ class ForbiddenRevokedSessionRepository extends RevokedSessionRepository {
 export interface OfrepFixture {
   app: NestExpressApplication;
   dataSource: DataSource;
+  /** What the application's global TelemetryInterceptor reported. */
+  telemetry: FakeTelemetry;
   keys: { server: string; web: string; staging: string };
   ids: { production: string; staging: string; serverKey: string };
   close(): Promise<void>;
@@ -67,9 +72,11 @@ export interface OfrepFixture {
  * The OFREP module behind the application's three global guards (ThrottlerGuard, SameOriginGuard,
  * JwtAuthGuard) and configureApp, on an in-memory database migrated like production, seeded with:
  * production flags on-flag (on), off-flag (off), unset-flag (no value), exposed-flag
- * (client-exposed, on); a server and a web key for production, a server key for staging.
+ * (client-exposed, on); a server and a web key for production, a server key for staging. The
+ * global TelemetryInterceptor is on, with a recording Telemetry.
  */
 export async function ofrepTestApp(): Promise<OfrepFixture> {
+  const telemetry = new FakeTelemetry();
   const moduleRef = await Test.createTestingModule({
     imports: [
       testConfigModule(),
@@ -87,6 +94,8 @@ export async function ofrepTestApp(): Promise<OfrepFixture> {
       { provide: APP_GUARD, useClass: ThrottlerGuard },
       { provide: APP_GUARD, useClass: SameOriginGuard },
       { provide: APP_GUARD, useClass: JwtAuthGuard },
+      { provide: Telemetry, useValue: telemetry },
+      { provide: APP_INTERCEPTOR, useClass: TelemetryInterceptor },
       { provide: AccessTokenVerifier, useClass: ForbiddenAccessTokenVerifier },
       { provide: OAuthClient, useClass: ForbiddenOAuthClient },
       {
@@ -134,6 +143,7 @@ export async function ofrepTestApp(): Promise<OfrepFixture> {
   return {
     app,
     dataSource,
+    telemetry,
     keys,
     ids: { production: 'e-prod', staging: 'e-staging', serverKey: 'k-server' },
     close: () => app.close(),
