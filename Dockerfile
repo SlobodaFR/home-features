@@ -24,10 +24,7 @@ RUN npm install \
 COPY backend backend
 COPY --from=frontend-build /app/frontend/dist frontend/dist
 RUN npm run build --workspace=backend
-# Le prune retire les paquets de dev mais laisse un dossier @typescript vide (TypeScript 7, outils natifs
-# de dev) : on le retire, docker-boot-check --forbid-ts refuse sa presence dans l'image de production.
-RUN npm prune --omit=dev \
-    && rm -rf node_modules/typescript node_modules/@typescript
+RUN npm prune --omit=dev
 
 # ---------- Runtime ----------
 FROM node:26-bookworm-slim AS runtime
