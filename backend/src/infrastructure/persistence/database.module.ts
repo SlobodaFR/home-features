@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import { ENTITIES } from './entities';
 import { MIGRATIONS } from './migrations';
 import { SchemaGuard } from './schema-guard';
-import { serializeConnection } from './serialized-connection';
+import { serializedDataSourceFactory } from './serialized-connection';
 
 @Module({
   imports: [
@@ -25,11 +24,7 @@ import { serializeConnection } from './serialized-connection';
         migrationsRun: true,
       }),
       // Before initialize(): the migrations already run on the serialized connection.
-      dataSourceFactory: async (options) => {
-        const dataSource = new DataSource(options!);
-        serializeConnection(dataSource);
-        return dataSource.initialize();
-      },
+      dataSourceFactory: serializedDataSourceFactory,
     }),
   ],
   providers: [SchemaGuard],

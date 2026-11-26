@@ -1,8 +1,8 @@
+import { serializedTypeOrmRoot } from '../../test-support/serialized-typeorm';
 import { randomUUID } from 'node:crypto';
 import { APP_GUARD } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import request from 'supertest';
 import { configureApp, nestApplicationOptions } from '../../configure-app';
 import { RevokedSessionRepository } from '../../domain/auth/revoked-session.repository';
@@ -44,7 +44,7 @@ describe('signed logout webhook (AuthModule behind the global SameOriginGuard, i
             ? { AUTH_WEBHOOK_SIGNING_SECRET: options.signingSecret }
             : {}),
         }),
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           entities: ENTITIES,

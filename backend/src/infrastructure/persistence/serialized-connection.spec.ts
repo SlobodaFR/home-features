@@ -103,20 +103,42 @@ describe('serializeConnection (issue #57)', () => {
     });
 
     it('does not let a plain write join, then lose, another request transaction', async () => {
-      const { ds, repository } = await open(true);
+      const { ds } = await open(true);
       const runner = ds.createQueryRunner();
       await runner.startTransaction();
       await runner.query(insertSql('tx'));
 
-      // A write made outside the transaction (a plain repository call) waits for it...
-      const plain = repository.delete('tx');
+      // A write made outside the transaction waits for it...
+      const plain = ds.query(insertSql('plain'));
       await new Promise((resolve) => setTimeout(resolve, 50));
       await runner.rollbackTransaction();
       await runner.release();
       await plain;
 
-      // ...so rolling the transaction back neither undoes it nor is it undone by it.
-      expect(await ids(ds)).toEqual([]);
+      // ...so the rollback does not undo it.
+      expect(await ids(ds)).toEqual(['plain']);
+      await ds.destroy();
+    });
+
+    it('does not keep the connection when SQLite rolled back by itself and ROLLBACK fails', async () => {
+      const { ds } = await open(true);
+      const runner = ds.createQueryRunner();
+      await runner.startTransaction();
+      // What disk-full or I/O errors do: the transaction is gone, COMMIT then ROLLBACK fail.
+      (
+        ds.driver as unknown as {
+          databaseConnection: { exec(sql: string): void };
+        }
+      ).databaseConnection.exec('ROLLBACK');
+      await expect(runner.commitTransaction()).rejects.toThrow(
+        /no transaction is active/,
+      );
+      await expect(runner.rollbackTransaction()).rejects.toThrow(
+        /no transaction is active/,
+      );
+      await runner.release();
+
+      expect(await ds.query('SELECT 1 AS one')).toEqual([{ one: 1 }]);
       await ds.destroy();
     });
 

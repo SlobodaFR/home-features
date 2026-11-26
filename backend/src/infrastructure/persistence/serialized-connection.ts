@@ -1,4 +1,5 @@
-import type { DataSource } from 'typeorm';
+import { DataSource } from 'typeorm';
+import type { DataSourceOptions } from 'typeorm';
 import { BetterSqlite3QueryRunner } from 'typeorm/driver/better-sqlite3/BetterSqlite3QueryRunner';
 import type { BetterSqlite3Driver } from 'typeorm/driver/better-sqlite3/BetterSqlite3Driver';
 import type { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
@@ -49,7 +50,11 @@ class ConnectionGate {
       };
       const timer = setTimeout(() => {
         cleanup();
-        reject(new Error('The database stayed inside another transaction'));
+        reject(
+          new Error(
+            'The database stayed inside another transaction (or the queue of waiting requests is longer than 5 s)',
+          ),
+        );
       }, MAX_WAIT_MS);
       const cleanup = () => {
         clearTimeout(timer);
@@ -66,6 +71,13 @@ class SerializedQueryRunner extends BetterSqlite3QueryRunner {
     private readonly gate: ConnectionGate,
   ) {
     super(driver);
+  }
+
+  // TypeORM always releases its runner in a finally, even when ROLLBACK itself failed (SQLite
+  // already rolled back on disk-full / I/O errors): never keep the gate for a discarded runner.
+  override async release(): Promise<void> {
+    this.gate.release(this);
+    return super.release();
   }
 
   override async startTransaction(
@@ -124,4 +136,13 @@ export function serializeConnection(dataSource: DataSource): void {
   const driver = dataSource.driver as BetterSqlite3Driver;
   const gate = new ConnectionGate();
   driver.createQueryRunner = () => new SerializedQueryRunner(driver, gate);
+}
+
+/** `dataSourceFactory` for TypeOrmModule: serialized before initialize(), so migrations too. */
+export async function serializedDataSourceFactory(
+  options?: DataSourceOptions,
+): Promise<DataSource> {
+  const dataSource = new DataSource(options!);
+  serializeConnection(dataSource);
+  return dataSource.initialize();
 }

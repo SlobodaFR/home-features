@@ -1,8 +1,8 @@
+import { serializedTypeOrmRoot } from './serialized-typeorm';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { configureApp, nestApplicationOptions } from '../configure-app';
 import {
@@ -80,7 +80,7 @@ export async function ofrepTestApp(): Promise<OfrepFixture> {
   const moduleRef = await Test.createTestingModule({
     imports: [
       testConfigModule(),
-      TypeOrmModule.forRoot({
+      serializedTypeOrmRoot({
         type: 'better-sqlite3',
         database: ':memory:',
         entities: ENTITIES,
