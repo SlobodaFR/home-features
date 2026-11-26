@@ -67,6 +67,8 @@ export function FlagDetailPage() {
       );
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Failed to update', 'error');
+    } finally {
+      setExposureBusy(false);
     }
   }
 

@@ -52,9 +52,9 @@ export function FlagsTab() {
     );
   }
 
-  const gridTemplate = `minmax(0,1fr) repeat(${environments.length}, minmax(88px, 112px)) 210px`;
+  const gridTemplate = `minmax(0,1fr) ${environments.length > 0 ? `repeat(${environments.length}, minmax(88px, 112px))` : ''} 210px`;
   // Below this width the grid scrolls instead of squeezing the flag name.
-  const gridMinWidth = 240 + environments.length * 100 + 210 + 32;
+  const gridMinWidth = 240 + environments.length * 112 + 210 + 32;
 
   return (
     <section aria-label="Feature flags" className="flex flex-col gap-md">
@@ -125,7 +125,7 @@ export function FlagsTab() {
         <p className="text-mute">No flag matches your search.</p>
       ) : (
         <div
-          className="overflow-x-auto"
+          className="-m-px overflow-x-auto p-px"
           tabIndex={0}
           role="region"
           aria-label="Flags by environment"
