@@ -1,4 +1,4 @@
-import { CSSProperties, FormEvent, useEffect, useMemo, useState } from 'react';
+import { CSSProperties, FormEvent, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ConfigEntryWithValues,
@@ -14,12 +14,12 @@ import { MenuButton } from '../components/MenuButton';
 import { SelectField } from '../components/SelectField';
 import { TextField } from '../components/TextField';
 import { useToast } from '../components/Toast';
+import { ValueEditor } from '../components/ValueEditor';
 import { useAppContext } from '../layout/AppLayout';
 import { EmptyState } from '../components/EmptyState';
 import {
   buttonPrimary,
   buttonSecondary,
-  cellInputClass,
   inputClass,
   labelClass,
   noticeError,
@@ -259,44 +259,6 @@ function ConfigMenu({
     <MenuButton
       label={`More actions for ${config.name}`}
       items={[{ label: 'Delete config…', onSelect: onDelete, danger: true }]}
-    />
-  );
-}
-
-/**
- * Saves on blur (or Enter) when the draft differs. The draft follows the stored value, and a
- * rejected save puts the stored value back instead of leaving text the server never kept.
- */
-function ValueEditor({
-  label,
-  value,
-  onSave,
-}: {
-  label: string;
-  value: string;
-  onSave: (value: string) => Promise<boolean>;
-}) {
-  const [draft, setDraft] = useState(value);
-
-  useEffect(() => {
-    setDraft(value);
-  }, [value]);
-
-  return (
-    <input
-      className={cellInputClass}
-      aria-label={label}
-      value={draft}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={() => {
-        if (draft === value) return;
-        void onSave(draft).then((saved) => {
-          if (!saved) setDraft(value);
-        });
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') event.currentTarget.blur();
-      }}
     />
   );
 }
