@@ -3,6 +3,17 @@
 export const buttonPrimary =
   'inline-flex min-h-[44px] items-center justify-center gap-sm rounded-full bg-ink px-xl font-button-md text-button-md text-on-primary transition-opacity [@media(hover:hover)]:hover:[&:not(:disabled)]:opacity-85 disabled:opacity-40';
 
+export const buttonSecondary =
+  'inline-flex min-h-[44px] items-center justify-center gap-sm rounded-full border border-hairline bg-transparent px-xl font-button-md text-button-md text-ink transition-colors [@media(hover:hover)]:hover:bg-soft-cloud disabled:opacity-40';
+
+/** Confirm button of a destructive dialog. */
+export const buttonDanger =
+  'inline-flex min-h-[44px] items-center justify-center gap-sm rounded-full bg-error px-xl font-button-md text-button-md text-on-primary transition-opacity [@media(hover:hover)]:hover:[&:not(:disabled)]:opacity-85 disabled:opacity-40';
+
+/** Round 44px icon-only button. */
+export const iconButton =
+  'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink transition-colors [@media(hover:hover)]:hover:bg-soft-cloud';
+
 /** Low-emphasis row action ("History"). */
 export const actionLink =
   'inline-flex min-h-[44px] items-center px-sm font-label-caps text-label-caps uppercase text-mute underline decoration-1 underline-offset-4 hover:text-ink';
