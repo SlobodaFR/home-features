@@ -7,6 +7,8 @@ export interface AppOverviewState {
   error: string | null;
   overview: AppOverview | null;
   refresh: () => Promise<void>;
+  /** Local (optimistic) edit of the loaded overview. */
+  patch: (update: (current: AppOverview) => AppOverview) => void;
 }
 
 /**
@@ -36,5 +38,11 @@ export function useAppOverview(appId: string): AppOverviewState {
     void refresh();
   }, [refresh]);
 
-  return { loading, error, overview, refresh };
+  const patch = useCallback(
+    (update: (current: AppOverview) => AppOverview) =>
+      setOverview((current) => (current ? update(current) : current)),
+    [],
+  );
+
+  return { loading, error, overview, refresh, patch };
 }

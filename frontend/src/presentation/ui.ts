@@ -40,6 +40,6 @@ export const tdClass =
   'px-md py-md align-top first:min-w-[10rem] first:pl-0 last:pr-0';
 
 export const pillClass =
-  'inline-flex items-center rounded-full border px-sm py-xs font-label-caps text-label-caps uppercase';
+  'inline-flex items-center whitespace-nowrap rounded-full border px-sm py-xs font-label-caps text-label-caps uppercase';
 
 export const noticeError = 'font-body-sm text-body-sm text-error';

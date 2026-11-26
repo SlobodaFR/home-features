@@ -3,6 +3,8 @@ import {
   deletionWarning,
   enabledEnvironmentNames,
   FeatureFlagWithValues,
+  filterFlags,
+  withFlagValue,
 } from './feature-flag';
 
 const flag: FeatureFlagWithValues = {
@@ -54,5 +56,37 @@ describe('feature-flag', () => {
     expect(
       deletionWarning({ ...flag, values: [flag.values[1]] }, environments),
     ).toBeNull();
+  });
+});
+
+describe('filterFlags', () => {
+  const other: FeatureFlagWithValues = {
+    ...flag,
+    id: 'f2',
+    key: 'dark-mode',
+    name: 'Dark mode',
+    clientExposed: true,
+    lastEvaluatedAt: '2026-11-02T10:00:00Z',
+  };
+
+  it('searches name and key, case-insensitively', () => {
+    expect(filterFlags([flag, other], 'CHECK', 'all')).toEqual([flag]);
+    expect(filterFlags([flag, other], 'dark-', 'all')).toEqual([other]);
+  });
+
+  it('narrows by attribute', () => {
+    expect(filterFlags([flag, other], '', 'client')).toEqual([other]);
+    expect(filterFlags([flag, other], '', 'never-evaluated')).toEqual([flag]);
+  });
+});
+
+describe('withFlagValue', () => {
+  it('updates an existing value and adds a missing one', () => {
+    const updated = withFlagValue(flag, 'e2', true, '2026-11-26T00:00:00Z');
+    expect(updated.values.find((v) => v.environmentId === 'e2')?.enabled).toBe(
+      true,
+    );
+    const added = withFlagValue(flag, 'e3', true, '2026-11-26T00:00:00Z');
+    expect(added.values).toHaveLength(3);
   });
 });

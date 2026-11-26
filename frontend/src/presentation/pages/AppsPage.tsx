@@ -9,6 +9,7 @@ import { slugify } from '../../domain/slugify';
 import { apiClient } from '../../infrastructure/api-client';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Dialog } from '../components/Dialog';
+import { EmptyState } from '../components/EmptyState';
 import { ChevronRightIcon, PlusIcon, SearchIcon } from '../components/Icons';
 import { MenuButton } from '../components/MenuButton';
 import { PageShell } from '../components/PageShell';
@@ -180,18 +181,16 @@ function AppCard({
 
 function EmptyApps({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="flex flex-col items-start gap-md rounded bg-canvas p-xl shadow-[0_0_0_1px_var(--color-hairline-soft)]">
-      <h2 className="font-heading-md text-heading-md text-ink">No apps yet</h2>
-      <p className="max-w-prose font-body-md text-body-md text-mute">
-        An app groups the environments, feature flags and configs of one of your
-        services. Create your first app, then add a production environment and a
-        flag.
-      </p>
-      <button type="button" onClick={onCreate} className={buttonPrimary}>
-        <PlusIcon />
-        Create your first app
-      </button>
-    </div>
+    <EmptyState
+      title="No apps yet"
+      body="An app groups the environments, feature flags and configs of one of your services. Create your first app, then add a production environment and a flag."
+      action={
+        <button type="button" onClick={onCreate} className={buttonPrimary}>
+          <PlusIcon />
+          Create your first app
+        </button>
+      }
+    />
   );
 }
 
