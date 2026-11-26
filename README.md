@@ -1,4 +1,4 @@
-# Kinetic Feature Management
+# Features
 
 Feature flags & config management service for personal apps, deployed at
 [features.sloboda.fr](https://features.sloboda.fr). The other `home-*` services read their flags

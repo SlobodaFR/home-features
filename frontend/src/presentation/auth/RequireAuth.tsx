@@ -6,7 +6,10 @@ export function RequireAuth({ children }: { children: JSX.Element }) {
 
   if (loading) {
     return (
-      <div className="px-margin-mobile py-section text-center text-mute">
+      <div
+        className="px-margin-mobile py-section text-center font-body-md text-body-md text-mute"
+        role="status"
+      >
         Loading...
       </div>
     );

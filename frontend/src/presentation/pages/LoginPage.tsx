@@ -1,15 +1,16 @@
+import { buttonPrimary } from '../ui';
+
 export function LoginPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center px-margin-mobile">
-      <div className="w-full max-w-sm flex flex-col items-center gap-xl">
-        <h1 className="font-display-campaign text-display-campaign-mobile uppercase tracking-tighter text-ink text-center">
-          KINETIC
+    <main className="flex min-h-screen items-center justify-center px-margin-mobile">
+      <div className="flex w-full max-w-sm flex-col items-center gap-xl">
+        <h1 className="text-center font-display-campaign text-display-campaign-mobile uppercase tracking-tighter text-ink">
+          FEATURES
         </h1>
-
-        <a
-          href="/api/auth/login"
-          className="bg-ink text-surface px-xl py-md rounded-full font-button-md text-center"
-        >
+        <p className="text-center font-body-sm text-body-sm text-mute">
+          Feature flags, configs and API keys for the home services.
+        </p>
+        <a href="/api/auth/login" className={`${buttonPrimary} w-full`}>
           Sign in
         </a>
       </div>

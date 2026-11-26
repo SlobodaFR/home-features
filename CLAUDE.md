@@ -1,4 +1,4 @@
-# home-features (Kinetic Feature Management)
+# home-features (Features)
 
 Feature flags and config management service, deployed at `features.sloboda.fr` on the same VPS as
 the other `home-*` services. Users sign in through the central auth service (`home-auth`,
