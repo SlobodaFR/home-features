@@ -33,7 +33,8 @@ spacing: |
 components: |
   page-header, user-menu, button-primary, action-link, action-danger, text-input, select,
   card, app-card, data-table, flag-toggle, scope-pill, environment-chip, secret-banner,
-  history-panel, dialog, confirm-dialog, menu-button, toast, text-field
+  history-panel, dialog, confirm-dialog, menu-button, toast, text-field, app-tabs, flag-row,
+  switch, badge, filter-chip, empty-state
 ---
 
 ## Overview
@@ -174,6 +175,22 @@ créée (bordure 2px `ink`).
   montée, 4 s (8 s pour une erreur, bordure `error`).
 - **`text-field`** : libellé visible `label-caps`, champ, aide `body-sm` liée par
   `aria-describedby` (ex. clé dérivée du nom, affichée en direct).
+- **`app-tabs`** : navigation par onglets de la page d'une app (Flags, Configs,
+  Environments, API keys) ; onglet actif souligné en `ink` (2px), compteur
+  `label-caps`, défilement horizontal sur mobile, 44px de haut. "Flags" reste actif
+  sur la page d'un flag.
+- **`flag-row`** : une carte par flag sur mobile (nom + clé en monospace, un
+  `switch` étiqueté par environnement, badges d'état) ; une ligne de grille dès
+  `md` avec un en-tête de colonnes par environnement (les libellés des switches
+  deviennent `sr-only`). Le nom n'est pas répété quand il égale la clé.
+- **`switch`** : `flag-toggle` + libellé (visible en ligne sur mobile). Optimiste :
+  le switch bascule aussitôt, un toast confirme, un échec annule et affiche une
+  erreur. Aucune confirmation pour un basculement (rapide mais réversible).
+- **`badge`** : pilule `label-caps` ; `neutral` (état d'évaluation), `warning`
+  (client-visible), `solid`.
+- **`filter-chip`** : pilule 44px `aria-pressed` ; active = fond `ink`.
+- **`empty-state`** : carte avec titre, explication et action principale (aucun
+  environnement, aucun flag, aucune app).
 - **`flag-toggle`** : case à cocher native (`role="switch"`), 44x24px, piste
   `mute` éteinte / `ink` allumée, curseur `canvas` / `surface`. Clavier et lecteurs
   d'écran conservés ; `aria-label` "<flag> in <environnement>".
@@ -226,8 +243,8 @@ créée (bordure 2px `ink`).
 ## Known Gaps
 
 - Migration en cours des confirmations natives vers `confirm-dialog` : les apps
-  l'utilisent déjà ; flags, environnements, configs et clés d'API suivent dans les
-  PR suivantes de la pile.
+  l'utilisent déjà, ainsi que les flags ; environnements, configs et clés d'API
+  suivent dans la PR suivante de la pile.
 - Pas de token de voile (`scrim`) pour le fond des dialogues.
 - Pas de bascule manuelle clair/sombre : le thème suit le système, comme
   `home-remote-mcps`.
