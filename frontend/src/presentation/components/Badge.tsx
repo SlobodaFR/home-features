@@ -1,12 +1,11 @@
 import { ReactNode } from 'react';
 import { pillClass } from '../ui';
 
-type Tone = 'neutral' | 'warning' | 'solid';
+type Tone = 'neutral' | 'warning';
 
 const TONES: Record<Tone, string> = {
   neutral: 'border-hairline text-mute',
   warning: 'border-warning text-warning',
-  solid: 'border-ink bg-ink text-on-primary',
 };
 
 export function Badge({

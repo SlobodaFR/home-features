@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import {
   Link,
-  NavLink,
   Outlet,
   useLocation,
   useNavigate,
@@ -32,6 +31,8 @@ export interface AppContext {
   ) => Promise<void>;
   /** "flagId:environmentId" of toggles awaiting the server. */
   pending: ReadonlySet<string>;
+  /** Number of successful toggles so far (lets views reload derived data such as history). */
+  changeCount: number;
 }
 
 export function useAppContext(): AppContext {
@@ -46,6 +47,7 @@ export function AppLayout() {
   const location = useLocation();
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const [deletingApp, setDeletingApp] = useState(false);
+  const [changeCount, setChangeCount] = useState(0);
 
   const toggleFlag = useCallback(
     async (flagId: string, environmentId: string, enabled: boolean) => {
@@ -68,6 +70,9 @@ export function AppLayout() {
       apply(enabled);
       try {
         await apiClient.setFlagValue(flagId, environmentId, enabled);
+        // A refresh() racing with the request may have restored an older value.
+        apply(enabled);
+        setChangeCount((count) => count + 1);
         const flag = overview?.flags.find((f) => f.id === flagId);
         const env = overview?.environments.find((e) => e.id === environmentId);
         notify(
@@ -137,6 +142,7 @@ export function AppLayout() {
     refresh,
     toggleFlag,
     pending,
+    changeCount,
   };
 
   return (
@@ -177,31 +183,32 @@ export function AppLayout() {
         className="-mx-margin-mobile overflow-x-auto border-b border-hairline-soft px-margin-mobile md:mx-0 md:px-0"
       >
         <ul className="flex min-w-max gap-lg">
-          {tabs.map((tab) => (
-            <li key={tab.to}>
-              <NavLink
-                to={tab.to}
-                end={tab.end}
-                className={({ isActive }) => {
-                  const active =
-                    isActive ||
-                    (tab.end === true && location.pathname.includes('/flags/'));
-                  return `-mb-px inline-flex min-h-[44px] items-center gap-sm border-b-2 font-button-md text-button-md ${
+          {tabs.map((tab) => {
+            const active = tab.end
+              ? location.pathname === tab.to ||
+                location.pathname.startsWith(`${tab.to}/flags/`)
+              : location.pathname.startsWith(tab.to);
+            return (
+              <li key={tab.to}>
+                <Link
+                  to={tab.to}
+                  aria-current={active ? 'page' : undefined}
+                  className={`-mb-px inline-flex min-h-[44px] items-center gap-sm border-b-2 font-button-md text-button-md ${
                     active
                       ? 'border-ink text-ink'
                       : 'border-transparent text-mute hover:text-ink'
-                  }`;
-                }}
-              >
-                {tab.label}
-                {tab.count !== null && (
-                  <span className="tabular font-label-caps text-label-caps text-mute">
-                    {tab.count}
-                  </span>
-                )}
-              </NavLink>
-            </li>
-          ))}
+                  }`}
+                >
+                  {tab.label}
+                  {tab.count !== null && (
+                    <span className="tabular font-label-caps text-label-caps text-mute">
+                      {tab.count}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 

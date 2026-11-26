@@ -3,7 +3,10 @@ interface SwitchProps {
   onChange: (checked: boolean) => void;
   /** Accessible name; always present, shown or not. */
   label: string;
-  disabled?: boolean;
+  /** A change is in flight: further changes are ignored (focus is kept, unlike `disabled`). */
+  busy?: boolean;
+  /** Accessible name when the visible label lacks context (e.g. "<flag> in <environment>"). */
+  accessibleName?: string;
   /** Show the label text beside the switch (row layout) instead of hiding it visually. */
   showLabel?: boolean;
   /** With showLabel: keep the label visible on small screens only (a column header takes over). */
@@ -15,7 +18,8 @@ export function Switch({
   checked,
   onChange,
   label,
-  disabled,
+  busy = false,
+  accessibleName,
   showLabel = false,
   labelHiddenFromMd = false,
 }: SwitchProps) {
@@ -39,8 +43,11 @@ export function Switch({
         role="switch"
         className="toggle"
         checked={checked}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.checked)}
+        aria-label={accessibleName}
+        aria-busy={busy || undefined}
+        onChange={(event) => {
+          if (!busy) onChange(event.target.checked);
+        }}
       />
     </label>
   );

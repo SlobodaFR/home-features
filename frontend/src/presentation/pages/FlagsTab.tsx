@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useMemo, useState } from 'react';
+import { CSSProperties, FormEvent, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FlagFilter,
@@ -10,6 +10,7 @@ import { slugify } from '../../domain/slugify';
 import { apiClient } from '../../infrastructure/api-client';
 import { Badge } from '../components/Badge';
 import { Dialog } from '../components/Dialog';
+import { EmptyState } from '../components/EmptyState';
 import { ChevronRightIcon, PlusIcon, SearchIcon } from '../components/Icons';
 import { Switch } from '../components/Switch';
 import { TextField } from '../components/TextField';
@@ -37,7 +38,7 @@ export function FlagsTab() {
     [flags, query, filter],
   );
 
-  if (environments.length === 0) {
+  if (environments.length === 0 && (flags?.length ?? 0) === 0) {
     return (
       <EmptyState
         title="Add an environment first"
@@ -52,6 +53,8 @@ export function FlagsTab() {
   }
 
   const gridTemplate = `minmax(0,1fr) repeat(${environments.length}, minmax(88px, 112px)) 210px`;
+  // Below this width the grid scrolls instead of squeezing the flag name.
+  const gridMinWidth = 240 + environments.length * 100 + 210 + 32;
 
   return (
     <section aria-label="Feature flags" className="flex flex-col gap-md">
@@ -121,33 +124,43 @@ export function FlagsTab() {
       ) : visible.length === 0 ? (
         <p className="text-mute">No flag matches your search.</p>
       ) : (
-        <div>
+        <div
+          className="overflow-x-auto"
+          tabIndex={0}
+          role="region"
+          aria-label="Flags by environment"
+        >
           <div
-            aria-hidden="true"
-            className="hidden items-end gap-md border-b border-hairline px-gutter pb-sm font-label-caps text-label-caps uppercase text-mute md:grid"
-            style={{ gridTemplateColumns: gridTemplate }}
+            className="md:min-w-[var(--grid-min)]"
+            style={{ '--grid-min': `${gridMinWidth}px` } as CSSProperties}
           >
-            <span>Flag</span>
-            {environments.map((env) => (
-              <span key={env.id} className="truncate">
-                {env.name}
-              </span>
-            ))}
-            <span>Status</span>
+            <div
+              aria-hidden="true"
+              className="hidden items-end gap-md border-b border-hairline px-gutter pb-sm font-label-caps text-label-caps uppercase text-mute md:grid"
+              style={{ gridTemplateColumns: gridTemplate }}
+            >
+              <span>Flag</span>
+              {environments.map((env) => (
+                <span key={env.id} className="truncate">
+                  {env.name}
+                </span>
+              ))}
+              <span>Status</span>
+            </div>
+            <ul className="flex flex-col gap-sm md:gap-0">
+              {visible.map((flag) => (
+                <FlagRow
+                  key={flag.id}
+                  flag={flag}
+                  appId={appId}
+                  gridTemplate={gridTemplate}
+                  environments={environments}
+                  pending={pending}
+                  onToggle={toggleFlag}
+                />
+              ))}
+            </ul>
           </div>
-          <ul className="flex flex-col gap-sm md:gap-0">
-            {visible.map((flag) => (
-              <FlagRow
-                key={flag.id}
-                flag={flag}
-                appId={appId}
-                gridTemplate={gridTemplate}
-                environments={environments}
-                pending={pending}
-                onToggle={toggleFlag}
-              />
-            ))}
-          </ul>
         </div>
       )}
 
@@ -224,8 +237,9 @@ function FlagRow({
                 showLabel
                 labelHiddenFromMd
                 label={env.name}
+                accessibleName={`${flag.name} in ${env.name}`}
                 checked={value?.enabled ?? false}
-                disabled={pending.has(`${flag.id}:${env.id}`)}
+                busy={pending.has(`${flag.id}:${env.id}`)}
                 onChange={(enabled) => void onToggle(flag.id, env.id, enabled)}
               />
             </div>
@@ -249,24 +263,6 @@ function FlagRow({
         </Badge>
       </div>
     </li>
-  );
-}
-
-export function EmptyState({
-  title,
-  body,
-  action,
-}: {
-  title: string;
-  body: string;
-  action: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col items-start gap-md rounded bg-canvas p-xl shadow-[0_0_0_1px_var(--color-hairline-soft)]">
-      <h2 className="font-heading-md text-heading-md text-ink">{title}</h2>
-      <p className="max-w-prose font-body-md text-body-md text-mute">{body}</p>
-      {action}
-    </div>
   );
 }
 
@@ -338,7 +334,7 @@ function CreateFlagForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
-        autoFocus
+        data-autofocus
         placeholder="New dashboard"
       />
       <TextField

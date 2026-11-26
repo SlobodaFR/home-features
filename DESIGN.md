@@ -186,8 +186,10 @@ créée (bordure 2px `ink`).
 - **`switch`** : `flag-toggle` + libellé (visible en ligne sur mobile). Optimiste :
   le switch bascule aussitôt, un toast confirme, un échec annule et affiche une
   erreur. Aucune confirmation pour un basculement (rapide mais réversible).
+  Pendant l'envoi le switch est `aria-busy` et ignore les changements (jamais
+  `disabled`, pour ne pas perdre le focus clavier).
 - **`badge`** : pilule `label-caps` ; `neutral` (état d'évaluation), `warning`
-  (client-visible), `solid`.
+  (client-visible).
 - **`filter-chip`** : pilule 44px `aria-pressed` ; active = fond `ink`.
 - **`empty-state`** : carte avec titre, explication et action principale (aucun
   environnement, aucun flag, aucune app).

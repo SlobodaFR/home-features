@@ -29,12 +29,14 @@ import {
 
 export function FlagDetailPage() {
   const { flagId = '' } = useParams<{ flagId: string }>();
-  const { appId, overview, toggleFlag, pending, refresh } = useAppContext();
+  const { appId, overview, toggleFlag, pending, refresh, changeCount } =
+    useAppContext();
   const { notify } = useToast();
   const navigate = useNavigate();
   const [exposing, setExposing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [exposureBusy, setExposureBusy] = useState(false);
 
   const flag = overview?.flags.find((f) => f.id === flagId);
   const environments = overview?.environments ?? [];
@@ -54,6 +56,7 @@ export function FlagDetailPage() {
   const enabledIn = enabledEnvironmentNames(flag, environments);
 
   async function setClientExposed(clientExposed: boolean) {
+    setExposureBusy(true);
     try {
       await apiClient.updateFeatureFlag(flagId, { clientExposed });
       await refresh();
@@ -125,8 +128,9 @@ export function FlagDetailPage() {
                 <Switch
                   showLabel
                   label={env.name}
+                  accessibleName={`${flag.name} in ${env.name}`}
                   checked={value?.enabled ?? false}
-                  disabled={pending.has(`${flag.id}:${env.id}`)}
+                  busy={pending.has(`${flag.id}:${env.id}`)}
                   onChange={(enabled) =>
                     void toggleFlag(flag.id, env.id, enabled)
                   }
@@ -151,6 +155,7 @@ export function FlagDetailPage() {
         <Switch
           showLabel
           label="Client-visible (web keys)"
+          busy={exposureBusy}
           checked={flag.clientExposed}
           onChange={(checked) =>
             checked ? setExposing(true) : void setClientExposed(false)
@@ -169,7 +174,11 @@ export function FlagDetailPage() {
         }}
       />
 
-      <HistorySection flagId={flagId} environments={environments} />
+      <HistorySection
+        flagId={flagId}
+        environments={environments}
+        reloadKey={changeCount}
+      />
 
       <section
         className="rounded border border-error p-gutter md:p-xl"
@@ -220,9 +229,9 @@ export function FlagDetailPage() {
             flag.id,
             warning ? flag.key : undefined,
           );
-          await refresh();
-          notify(`${flag.name} deleted`);
           void navigate(`/apps/${appId}`, { replace: true });
+          notify(`${flag.name} deleted`);
+          await refresh();
         }}
       />
     </div>
@@ -299,9 +308,12 @@ function DetailsSection({
 function HistorySection({
   flagId,
   environments,
+  reloadKey,
 }: {
   flagId: string;
   environments: { id: string; name: string }[];
+  /** Changes when a switch was toggled, to reload the history. */
+  reloadKey: number;
 }) {
   const [changes, setChanges] = useState<FlagValueChange[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -319,7 +331,9 @@ function HistorySection({
     return () => {
       cancelled = true;
     };
-  }, [flagId]);
+    // reloadKey only re-triggers the fetch after a toggle.
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies
+  }, [flagId, reloadKey]);
 
   return (
     <section className={cardClass} aria-labelledby="flag-history">
