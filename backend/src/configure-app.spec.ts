@@ -54,6 +54,19 @@ describe('configureApp', () => {
     await app.close();
   });
 
+  it('lets the auth service origin load images (avatar) through the CSP', async () => {
+    const app = await appWith({
+      AUTH_SERVICE_URL: 'https://auth.example.test/',
+    });
+
+    const res = await request(app.getHttpServer()).get('/api/probe');
+
+    expect(res.headers['content-security-policy']).toContain(
+      "img-src 'self' data: https://auth.example.test https://ui-avatars.com;",
+    );
+    await app.close();
+  });
+
   it('does not answer a CORS preflight with permissions', async () => {
     const app = await appWith({});
 
