@@ -33,7 +33,7 @@ spacing: |
 components: |
   page-header, user-menu, button-primary, action-link, action-danger, text-input, select,
   card, app-card, data-table, flag-toggle, scope-pill, environment-chip, secret-banner,
-  history-panel, dialog, confirm-dialog, menu-button, toast, text-field, app-tabs, flag-row,
+  history-panel, select-field, config-row, key-row, secret-reveal, dialog, confirm-dialog, menu-button, toast, text-field, app-tabs, flag-row,
   switch, badge, filter-chip, empty-state
 ---
 
@@ -193,6 +193,17 @@ créée (bordure 2px `ink`).
 - **`filter-chip`** : pilule 44px `aria-pressed` ; active = fond `ink`.
 - **`empty-state`** : carte avec titre, explication et action principale (aucun
   environnement, aucun flag, aucune app).
+- **`select-field`** : comme `text-field` pour un `<select>`, avec une aide qui
+  décrit l'option choisie (portée d'une clé, type d'une config).
+- **`config-row`** : carte sur mobile / ligne de grille dès `md`, comme `flag-row` ;
+  nom, clé en monospace, badge de type, un champ de valeur par environnement
+  (enregistré à la sortie du champ ou sur Entrée, toast de confirmation) et menu
+  "⋯" pour supprimer.
+- **`key-row`** : nom, badges de portée (`web` en `warning`) et d'environnement,
+  création et dernière utilisation en temps relatif, menu "⋯" pour révoquer.
+- **`secret-reveal`** : dialogue affiché une seule fois à la création d'une clé :
+  clé en monospace dans un cadre `ink` 2px, bouton "Copy key" principal, "I have
+  stored it" secondaire.
 - **`flag-toggle`** : case à cocher native (`role="switch"`), 44x24px, piste
   `mute` éteinte / `ink` allumée, curseur `canvas` / `surface`. Clavier et lecteurs
   d'écran conservés ; `aria-label` "<flag> in <environnement>".
@@ -244,9 +255,6 @@ créée (bordure 2px `ink`).
 
 ## Known Gaps
 
-- Migration en cours des confirmations natives vers `confirm-dialog` : les apps
-  l'utilisent déjà, ainsi que les flags ; environnements, configs et clés d'API
-  suivent dans la PR suivante de la pile.
 - Pas de token de voile (`scrim`) pour le fond des dialogues.
 - Pas de bascule manuelle clair/sombre : le thème suit le système, comme
   `home-remote-mcps`.
