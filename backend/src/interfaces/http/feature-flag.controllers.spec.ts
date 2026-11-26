@@ -1,6 +1,6 @@
+import { serializedTypeOrmRoot } from '../../test-support/serialized-typeorm';
 import { ENTITIES } from '../../infrastructure/persistence/entities';
 import { Test } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigValueType } from '../../domain/config-entry/config-value-type.enum';
 import { AppEnvironmentsController } from './controllers/app-environments.controller';
 import { AppConfigsController } from './controllers/app-configs.controller';
@@ -32,7 +32,7 @@ describe('Feature flag controllers (integration)', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         testConfigModule(),
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           dropSchema: true,

@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ENTITIES } from './entities';
 import { MIGRATIONS } from './migrations';
 import { SchemaGuard } from './schema-guard';
+import { serializedDataSourceFactory } from './serialized-connection';
 
 @Module({
   imports: [
@@ -22,6 +23,8 @@ import { SchemaGuard } from './schema-guard';
         migrations: MIGRATIONS,
         migrationsRun: true,
       }),
+      // Before initialize(): the migrations already run on the serialized connection.
+      dataSourceFactory: serializedDataSourceFactory,
     }),
   ],
   providers: [SchemaGuard],

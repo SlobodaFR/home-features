@@ -1,8 +1,8 @@
+import { serializedTypeOrmRoot } from '../../test-support/serialized-typeorm';
 import { Controller, Get, Module, Req, UseGuards } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   SkipThrottle,
   ThrottlerGuard,
@@ -69,7 +69,7 @@ describe('rate limiting', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         testConfigModule(),
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           entities: ENTITIES,

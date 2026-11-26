@@ -1,3 +1,4 @@
+import { serializedTypeOrmRoot } from '../../test-support/serialized-typeorm';
 import {
   BadRequestException,
   ConflictException,
@@ -5,7 +6,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { ApiKeyRepository } from '../../domain/api-key/api-key.repository';
 import { ConfigValueType } from '../../domain/config-entry/config-value-type.enum';
@@ -47,7 +47,7 @@ describe('PublicApiController (integration)', () => {
       imports: [
         testConfigModule(),
         // The real migrations, so the foreign keys (ON DELETE RESTRICT) are the production ones.
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           entities: ENTITIES,

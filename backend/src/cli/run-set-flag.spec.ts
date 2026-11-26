@@ -1,6 +1,6 @@
+import { serializedTypeOrmRoot } from '../test-support/serialized-typeorm';
 import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import type { INestApplicationContext } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { pseudonymize } from '../domain/shared/pseudonymize';
@@ -22,7 +22,7 @@ describe('set-flag CLI', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         testConfigModule({ PSEUDONYM_SECRET: SECRET }),
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           entities: ENTITIES,

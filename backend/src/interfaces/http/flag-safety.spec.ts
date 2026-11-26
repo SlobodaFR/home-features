@@ -1,7 +1,7 @@
+import { serializedTypeOrmRoot } from '../../test-support/serialized-typeorm';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import request from 'supertest';
 import { configureApp } from '../../configure-app';
 import { FeatureFlagRepository } from '../../domain/feature-flag/feature-flag.repository';
@@ -33,7 +33,7 @@ describe('Feature flag rollout safety (integration)', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         testConfigModule(),
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           entities: ENTITIES,
@@ -225,7 +225,7 @@ describe('DELETE /api/flags/:id over HTTP', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         testConfigModule(),
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           entities: ENTITIES,
