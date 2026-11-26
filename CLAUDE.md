@@ -115,9 +115,15 @@ entity change needs a new migration appended to `MIGRATIONS`
   reads SQLite foreign-key names from the stored DDL in the `CONSTRAINT "x" FOREIGN KEY` form only,
   so an FK added by `ADD COLUMN` carries that text in an SQL comment (see `ApiKeyEnvironment`).
 - `flag_value_changes` is append-only (triggers refuse UPDATE and DELETE) and has no foreign keys.
-- TypeORM's better-sqlite3 driver shares one connection and does not serialize its async
-  transactions: concurrent requests interleave inside them. Writes that must be atomic go through
-  `runSqliteTransaction` (synchronous `BEGIN IMMEDIATE` transaction, waits for any open one);
+- TypeORM's better-sqlite3 driver shares one connection and one query runner: concurrent
+  requests join each other's transactions (`repository.save()` opens one) and are rolled back or
+  committed with them. `DatabaseModule` therefore calls `serializeConnection`
+  (`serialized-connection.ts`) before `initialize()`: one query runner per caller, one transaction
+  holder at a time, every other query waits (5 s, then it fails). Never use the DataSource from
+  inside a `dataSource.transaction()` callback (use its `manager`): it would wait for that very
+  transaction. A new `TypeOrmModule` outside `DatabaseModule` must do the same.
+- Writes that must be atomic across statements and fast also go through `runSqliteTransaction`
+  (synchronous `BEGIN IMMEDIATE` transaction, waits for any open one);
   `FlagValueRepository.upsertRecordingChange` is the only way to set a flag value.
 
 ```bash
