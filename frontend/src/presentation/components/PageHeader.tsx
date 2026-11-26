@@ -65,9 +65,13 @@ function UserMenu() {
         aria-controls={panelId}
         ref={buttonRef}
         onClick={() => setOpen((value) => !value)}
-        className="flex h-11 w-11 items-center justify-center rounded-full border border-hairline bg-canvas font-button-md text-button-md text-ink hover:bg-soft-cloud"
+        className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-hairline bg-canvas font-button-md text-button-md text-ink hover:bg-soft-cloud"
       >
-        {initial}
+        <Avatar
+          key={user?.avatarUrl ?? ''}
+          url={user?.avatarUrl ?? null}
+          initial={initial}
+        />
       </button>
       {open && (
         <div
@@ -87,5 +91,24 @@ function UserMenu() {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * The account picture, or the initial when there is none or it fails to load (home-auth down,
+ * CSP, deleted avatar). The button carries the accessible name, so the image is decorative. Keyed
+ * on the URL by the caller: a new URL gets a fresh chance to load.
+ */
+function Avatar({ url, initial }: { url: string | null; initial: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!url || failed) return <>{initial}</>;
+  return (
+    <img
+      src={url}
+      alt=""
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+      className="h-full w-full rounded-full object-cover"
+    />
   );
 }

@@ -7,6 +7,7 @@ describe('CurrentUser', () => {
       id: 'user-1',
       email: 'john@example.com',
       name: 'John',
+      avatarUrl: null,
     };
 
     expect(user.id).toBe('user-1');
