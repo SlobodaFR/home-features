@@ -1,69 +1,57 @@
-import { DataSource } from 'typeorm';
-import { FeatureFlag } from '../../domain/feature-flag/feature-flag';
-import { ENTITIES } from './entities';
-import { FeatureFlagOrmEntity } from './entities/feature-flag.orm-entity';
-import { MIGRATIONS } from './migrations';
+// Reference spec of the harness convention `sqlite-serialized-transactions`: copy next to
+// serialized-connection.ts. Self-contained (in-memory database, one EntitySchema), so it runs
+// unchanged on TypeORM 0.3.x and 1.1.x. Vitest globals (`describe`, `it`, `expect`).
+import { DataSource, EntitySchema } from 'typeorm';
 import { serializeConnection } from './serialized-connection';
-import { TypeOrmFeatureFlagRepository } from './repositories/typeorm-feature-flag.repository';
 
-const flag = (id: string, appId = 'a1') =>
-  FeatureFlag.create({
-    id,
-    appId,
-    key: id,
-    name: id,
-    description: null,
-    clientExposed: false,
-    lastEvaluatedAt: null,
-    createdAt: new Date('2026-11-01T10:00:00Z'),
-  });
+interface Item {
+  id: string;
+  label: string;
+}
 
-async function open(serialize: boolean) {
+const ItemSchema = new EntitySchema<Item>({
+  name: 'Item',
+  tableName: 'items',
+  columns: {
+    id: { type: 'varchar', primary: true },
+    label: { type: 'varchar', nullable: false },
+  },
+});
+
+async function open(
+  serialize: boolean,
+  options?: Parameters<typeof serializeConnection>[1],
+) {
   const ds = new DataSource({
     type: 'better-sqlite3',
     database: ':memory:',
-    entities: ENTITIES,
-    migrations: MIGRATIONS,
-    migrationsRun: true,
+    entities: [ItemSchema],
+    synchronize: true,
   });
-  if (serialize) serializeConnection(ds);
+  if (serialize) serializeConnection(ds, options);
   await ds.initialize();
-  await ds.query(
-    "INSERT INTO apps (id, user_id, name, slug, description, created_at) VALUES ('a1', 'u1', 'Budget', 'budget', NULL, '2026-11-01 10:00:00')",
-  );
-  const repository = new TypeOrmFeatureFlagRepository(
-    ds.getRepository(FeatureFlagOrmEntity),
-  );
-  return { ds, repository };
+  return { ds, items: ds.getRepository(ItemSchema) };
 }
 
 const insertSql = (id: string) =>
-  `INSERT INTO feature_flags (id, app_id, key, name, client_exposed, created_at) VALUES ('${id}', 'a1', '${id}', '${id}', 0, '2026-11-01 10:00:00')`;
+  `INSERT INTO items (id, label) VALUES ('${id}', '${id}')`;
 
 const ids = async (ds: DataSource) => {
   const rows: { id: string }[] = await ds.query(
-    'SELECT id FROM feature_flags ORDER BY id',
+    'SELECT id FROM items ORDER BY id',
   );
   return rows.map((row) => row.id);
 };
 
-/** Three concurrent requests: one that fails (bad FK) next to two valid writes. */
-const concurrentWrites = (repository: TypeOrmFeatureFlagRepository) =>
-  Promise.allSettled([
-    repository.save(flag('bad', 'missing-app')),
-    repository.save(flag('f1')),
-    repository.save(flag('f2')),
-  ]);
-
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Request A runs a transaction that waits on I/O and then fails; request B saves a flag while A
+ * Request A runs a transaction that waits on I/O and then fails; request B saves an item while A
  * is waiting. B's save() resolves: its row must survive A's rollback.
  */
 async function savedWhileAnotherRequestRollsBack(
   ds: DataSource,
-  repository: TypeOrmFeatureFlagRepository,
+  items: ReturnType<DataSource['getRepository']>,
 ) {
   const requestA = ds
     .transaction(async (manager) => {
@@ -73,25 +61,30 @@ async function savedWhileAnotherRequestRollsBack(
     })
     .catch(() => undefined);
   await sleep(5);
-  await repository.save(flag('from-b'));
+  await items.save({ id: 'from-b', label: 'from-b' });
   await requestA;
 }
 
-describe('serializeConnection (issue #57)', () => {
+describe('serializeConnection (convention sqlite-serialized-transactions)', () => {
   describe('with the serialized connection', () => {
     it('does not roll back a concurrent request write along with the failing transaction', async () => {
-      const { ds, repository } = await open(true);
+      const { ds, items } = await open(true);
 
-      await savedWhileAnotherRequestRollsBack(ds, repository);
+      await savedWhileAnotherRequestRollsBack(ds, items);
 
       expect(await ids(ds)).toEqual(['from-b']);
       await ds.destroy();
     });
 
-    it('keeps the writes of concurrent requests apart: only the failing one rolls back', async () => {
-      const { ds, repository } = await open(true);
+    it('keeps the writes of concurrent save() calls apart: only the failing one rolls back', async () => {
+      const { ds, items } = await open(true);
 
-      const results = await concurrentWrites(repository);
+      const results = await Promise.allSettled([
+        // NOT NULL violation: this save()'s own implicit transaction rolls back.
+        items.save({ id: 'bad', label: null } as unknown as Item),
+        items.save({ id: 'f1', label: 'f1' }),
+        items.save({ id: 'f2', label: 'f2' }),
+      ]);
 
       expect(results.map((r) => r.status)).toEqual([
         'rejected',
@@ -110,7 +103,7 @@ describe('serializeConnection (issue #57)', () => {
 
       // A write made outside the transaction waits for it...
       const plain = ds.query(insertSql('plain'));
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await sleep(50);
       await runner.rollbackTransaction();
       await runner.release();
       await plain;
@@ -142,7 +135,7 @@ describe('serializeConnection (issue #57)', () => {
       await ds.destroy();
     });
 
-    it('lets a transaction run several statements and nest', async () => {
+    it('lets a transaction run several statements and nest (savepoints for the owner)', async () => {
       const { ds } = await open(true);
 
       await ds.transaction(async (manager) => {
@@ -155,27 +148,61 @@ describe('serializeConnection (issue #57)', () => {
     });
 
     it('fails instead of hanging when a transaction is never closed', async () => {
-      const { ds, repository } = await open(true);
+      const { ds, items } = await open(true, { maxWaitMs: 100 });
       const runner = ds.createQueryRunner();
       await runner.startTransaction();
 
-      await expect(repository.save(flag('late'))).rejects.toThrow(
+      await expect(items.save({ id: 'late', label: 'late' })).rejects.toThrow(
         /stayed inside another transaction/,
       );
 
       await runner.rollbackTransaction();
+      await runner.release();
       await ds.destroy();
-    }, 15_000);
+    });
+
+    it('keeps a plain write out of a queued transaction even when a subscriber awaits before the statement', async () => {
+      const { ds } = await open(true);
+      // A legal `beforeQuery` subscriber that awaits (query timing, telemetry...) widens the window
+      // between "the gate is free" and "the statement runs".
+      ds.subscribers.push({
+        beforeQuery: async (event) => {
+          if (event.query.includes("'plain'")) await sleep(10);
+        },
+      });
+      const owner = ds.createQueryRunner();
+      await owner.startTransaction();
+      await owner.query(insertSql('owner'));
+
+      // Both wait for `owner`; the transaction then fails and rolls back whatever ran inside it.
+      const plain = ds.query(insertSql('plain'));
+      const failing = ds
+        .transaction(async (manager) => {
+          await manager.query(insertSql('tx'));
+          await sleep(30);
+          throw new Error('request fails');
+        })
+        .catch(() => undefined);
+      await sleep(5);
+      await owner.commitTransaction();
+      await owner.release();
+      await plain;
+      await failing;
+
+      expect(await ids(ds)).toEqual(['owner', 'plain']);
+      await ds.destroy();
+    });
   });
 
   describe('without it (documents the root cause)', () => {
     it('loses a write that save() reported as done', async () => {
-      const { ds, repository } = await open(false);
+      const { ds, items } = await open(false);
 
-      await savedWhileAnotherRequestRollsBack(ds, repository);
+      await savedWhileAnotherRequestRollsBack(ds, items);
 
       // TypeORM's better-sqlite3 driver shares ONE query runner: B's save() sees the transaction
       // of A as its own, joins it, and A's rollback takes B's committed-looking row with it.
+      // If this ever fails, TypeORM fixed the driver: the convention can be retired.
       expect(await ids(ds)).toEqual([]);
       await ds.destroy();
     });
