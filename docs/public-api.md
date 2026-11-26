@@ -13,7 +13,7 @@ remains for configs.
 
 ## Authentication
 
-Generate an API key from the app's detail page in the Kinetic Feature Management UI
+Generate an API key from the app's detail page in the Features UI
 ("API keys" section), choosing its **environment** and its **scope**. The plaintext key is
 shown **once**, at creation time, and is never retrievable again — store it securely (e.g. in
 your service's secrets/env vars).

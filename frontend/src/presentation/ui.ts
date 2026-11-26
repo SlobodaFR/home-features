@@ -3,9 +3,6 @@
 export const buttonPrimary =
   'inline-flex min-h-[44px] items-center justify-center gap-sm rounded-full bg-ink px-xl font-button-md text-button-md text-on-primary transition-opacity [@media(hover:hover)]:hover:[&:not(:disabled)]:opacity-85 disabled:opacity-40';
 
-export const buttonSecondary =
-  'inline-flex min-h-[44px] items-center justify-center gap-sm rounded-full border border-hairline bg-transparent px-lg font-button-md text-button-md text-ink transition-colors [@media(hover:hover)]:hover:bg-soft-cloud disabled:opacity-40';
-
 /** Low-emphasis row action ("History"). */
 export const actionLink =
   'inline-flex min-h-[44px] items-center px-sm font-label-caps text-label-caps uppercase text-mute underline decoration-1 underline-offset-4 hover:text-ink';
@@ -19,7 +16,7 @@ export const inputClass =
 
 /** Dense input inside a table cell (config values). */
 export const cellInputClass =
-  'min-h-[40px] w-full min-w-[8rem] rounded border border-hairline bg-canvas px-md font-body-sm text-body-sm text-ink';
+  'min-h-[40px] w-full min-w-[8rem] rounded border border-hairline bg-canvas px-md font-body-md text-body-md text-ink';
 
 export const cardClass =
   'rounded bg-canvas p-gutter shadow-[0_0_0_1px_var(--color-hairline-soft)] md:p-xl';

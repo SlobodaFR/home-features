@@ -67,26 +67,27 @@ export function AppDetailPage() {
 
   if (!appId) {
     return (
-      <p className="px-margin-mobile py-section text-error">Missing app id.</p>
+      <PageShell>
+        <p className="text-error">Missing app id.</p>
+      </PageShell>
     );
   }
 
   if (loading && !overview) {
     return (
-      <div
-        className="px-margin-mobile py-section text-center text-mute"
-        role="status"
-      >
-        Loading...
-      </div>
+      <PageShell>
+        <p className="text-center text-mute" role="status">
+          Loading...
+        </p>
+      </PageShell>
     );
   }
 
   if (error || !overview) {
     return (
-      <div className="px-margin-mobile py-section text-center text-error">
-        Error: {error}
-      </div>
+      <PageShell>
+        <p className="text-center text-error">Error: {error}</p>
+      </PageShell>
     );
   }
 
@@ -296,14 +297,14 @@ export function AppDetailPage() {
           {environments.map((env) => (
             <li
               key={env.id}
-              className="flex items-center gap-xs rounded-full border border-hairline py-xs pl-md pr-xs font-body-sm text-body-sm text-ink"
+              className="flex items-center gap-xs rounded-full border border-hairline py-0 pl-md pr-0 font-body-sm text-body-sm text-ink"
             >
               {env.name}
               <button
                 type="button"
                 onClick={() => void handleDeleteEnvironment(env.id, env.name)}
                 aria-label={`Delete environment ${env.name}`}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-error hover:bg-soft-cloud"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full text-error hover:bg-soft-cloud"
               >
                 <span aria-hidden="true">x</span>
               </button>
@@ -342,7 +343,12 @@ export function AppDetailPage() {
         {environments.length === 0 ? (
           <p className="mb-md text-mute">Add an environment first.</p>
         ) : (
-          <div className="mb-md overflow-x-auto">
+          <div
+            className="mb-md overflow-x-auto"
+            tabIndex={0}
+            role="region"
+            aria-label="Scrollable table"
+          >
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-hairline">
@@ -493,7 +499,12 @@ export function AppDetailPage() {
         {environments.length === 0 ? (
           <p className="mb-md text-mute">Add an environment first.</p>
         ) : (
-          <div className="mb-md overflow-x-auto">
+          <div
+            className="mb-md overflow-x-auto"
+            tabIndex={0}
+            role="region"
+            aria-label="Scrollable table"
+          >
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-hairline">
@@ -649,7 +660,12 @@ export function AppDetailPage() {
         {apiKeys.apiKeys.length === 0 ? (
           <p className="mb-md text-mute">No API keys yet.</p>
         ) : (
-          <div className="mb-md overflow-x-auto">
+          <div
+            className="mb-md overflow-x-auto"
+            tabIndex={0}
+            role="region"
+            aria-label="Scrollable table"
+          >
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-hairline">

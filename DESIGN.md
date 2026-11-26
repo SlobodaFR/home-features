@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: home-features-design
-description: Une console d'administration de feature flags construite sur la même méthode que le design.md Nike de référence (contraste typographique fort, grille 8px, palette quasi-monochrome avec accents sémantiques rares), alignée sur home-budget et home-auth pour les tokens, et sur home-remote-mcps pour le thème sombre. Ici le "photography-first" de Nike disparaît : l'interface est un outil dense, sobre et lisible, où le seul élément expressif est le wordmark KINETIC.
+description: Une console d'administration de feature flags construite sur la même méthode que le design.md Nike de référence (contraste typographique fort, grille 8px, palette quasi-monochrome avec accents sémantiques rares), alignée sur home-budget et home-auth pour les tokens, et sur home-remote-mcps pour le thème sombre. Ici le "photography-first" de Nike disparaît : l'interface est un outil dense, sobre et lisible, où le seul élément expressif est le wordmark FEATURES.
 colors: |
   | primary | on-primary | surface | canvas | soft-cloud | ink | mute | hairline | hairline-soft | success | warning | error |
   | ------- | ---------- | ------- | ------ | ---------- | --- | ---- | -------- | ------------- | ------- | ------- | ----- |
@@ -13,7 +13,7 @@ colors-dark: |
 typography: |
   | display-campaign | heading-xl | heading-lg | heading-md | body-md | body-sm | button-md | label-caps | code |
   | ---------------- | ---------- | ---------- | ---------- | ------- | ------- | --------- | ---------- | ---- |
-  | fontFamily: Anton, fontSize: 56px (login) / 28px (wordmark), fontWeight: 500, lineHeight: 0.9, textTransform: uppercase, letterSpacing: -0.05em |
+  | fontFamily: Anton, fontSize: 56px (login) / 26px (wordmark), fontWeight: 500, lineHeight: 0.9, textTransform: uppercase, letterSpacing: -0.05em |
   | fontFamily: Inter, fontSize: 32px, fontWeight: 700, lineHeight: 1.2 |
   | fontFamily: Inter, fontSize: 24px, fontWeight: 600, lineHeight: 1.2 |
   | fontFamily: Inter, fontSize: 18px, fontWeight: 600, lineHeight: 1.5 |
@@ -31,13 +31,13 @@ spacing: |
   | -- | -- | -- | -- | ------ | -- | ------- |
   | 4px | 8px | 12px | 18px | 16px | 24px | 48px |
 components: |
-  page-header, button-primary, button-secondary, action-link, action-danger, text-input, select,
+  page-header, user-menu, button-primary, action-link, action-danger, text-input, select,
   card, data-table, flag-toggle, scope-pill, environment-chip, secret-banner, history-panel
 ---
 
 ## Overview
 
-`home-features` (Kinetic Feature Management) est une console d'administration :
+`home-features` (Features) est une console d'administration :
 on y gère des apps, leurs environnements, leurs feature flags, leurs configs et
 leurs clés d'API. Elle applique la discipline du design.md Nike pris comme
 référence méthodologique (le même que `home-jdr/DESIGN.md`, `home-qrcode/DESIGN.md`
@@ -49,7 +49,7 @@ Elle partage ses tokens avec `home-budget` et `home-auth` (même source Stitch) 
 `ink #111111`, `mute #707072`, `surface #fdf8f8`, `hairline`/`hairline-soft`,
 rayon 1rem, boutons pilule, espacements 8/12/16/24/48, Inter pour tout le texte
 et Anton pour le seul wordmark. Elle reprend de `home-budget` le vocabulaire de
-classes partagé (`ui.ts` : `buttonPrimary`, `buttonSecondary`, `inputClass`,
+classes partagé (`ui.ts` : `buttonPrimary`, `inputClass`,
 `cardClass`, `labelClass`) et de `home-remote-mcps` la mécanique du thème sombre
 (variables CSS + `darkMode: 'media'`).
 
@@ -58,8 +58,8 @@ sémantiques (danger, exposition navigateur). Tout le reste est encre sur papier
 
 **Caractéristiques clés :**
 
-- Un seul tier d'affichage : le wordmark `KINETIC` (Anton, majuscules), dans la
-  barre d'en-tête (28px) et sur l'écran de connexion (56px). Jamais ailleurs.
+- Un seul tier d'affichage : le wordmark `FEATURES` (Anton, majuscules), dans la
+  barre d'en-tête (26px) et sur l'écran de connexion (56px). Jamais ailleurs.
 - Titres Inter 700/600 : `heading-xl` pour le titre de page, `heading-md` pour
   le titre de carte. Aucun palier intermédiaire.
 - Palette quasi-monochrome ; `{colors.error}` pour les actions destructives,
@@ -95,7 +95,7 @@ rester lisible comme composant d'interface.
 
 | Token              | Taille      | Poids   | Usage                                                       |
 | ------------------ | ----------- | ------- | ----------------------------------------------------------- |
-| `display-campaign` | 56px / 28px | 500     | Wordmark `KINETIC` (connexion / en-tête)                    |
+| `display-campaign` | 56px / 26px | 500     | Wordmark `FEATURES` (connexion / en-tête)                   |
 | `heading-xl`       | 32px        | 700     | Titre de page ("Apps", nom de l'app)                        |
 | `heading-md`       | 18px        | 600     | Titre de carte ("Feature flags", "API keys")                |
 | `body-md`          | 16px        | 400/600 | Nom de flag, d'app, de clé (600 pour la ligne principale)   |
@@ -110,9 +110,10 @@ Les champs de saisie restent à 16px minimum (pas de zoom iOS au focus).
 
 - Grille 8px, tokens `xs` 4 / `sm` 8 / `md` 12 / `gutter` 16 / `xl` 24 / `section` 48.
 - Contenu centré, `max-w-5xl` (1024px), marges latérales 20px mobile, 40px dès `md`.
-- En-tête pleine largeur (`canvas`, filet `hairline-soft`, 64px) : wordmark à
-  gauche, e-mail de l'utilisateur et bouton "Log out" à droite (e-mail masqué
-  sous 640px).
+- Barre d'application compacte et collante (`canvas`, filet `hairline-soft`,
+  56px + zone de statut iOS via `safe-area-inset-top`) : wordmark à gauche, menu
+  utilisateur à droite. L'e-mail et "Log out" vivent dans ce menu, jamais dans la
+  barre.
 - Chaque domaine (environnements, flags, configs, clés d'API) est une **carte**
   empilée verticalement ; titre `heading-md`, compteur `label-caps` à droite, puis
   contenu, puis le formulaire d'ajout en pied de carte.
@@ -137,10 +138,13 @@ bannière de clé fraîchement créée, qui prend une bordure 2px `ink` pour ne 
 ## Components
 
 - **`page-header`** : voir Layout. Le wordmark est un lien vers `/`.
+- **`user-menu`** : bouton rond 44px (initiale de l'utilisateur) qui ouvre un
+  panneau de disclosure (`aria-expanded`, `aria-controls`) : e-mail en `mute` puis
+  "Log out". Se ferme avec Échap (le focus revient au bouton), un clic extérieur
+  ou en sortant du panneau au clavier. Panneau `canvas` cerné d'un filet
+  `hairline`, sans ombre.
 - **`button-primary`** : fond `ink`, texte `on-primary`, pilule, 44px de haut
   minimum, survol à 85% d'opacité. Une action principale par formulaire.
-- **`button-secondary`** : bordure `hairline`, fond transparent, survol `soft-cloud`
-  ("Log out").
 - **`action-link`** : `label-caps` souligné en `mute` (zone 44px), actions de ligne
   neutres ("History", `aria-expanded` quand le panneau est ouvert).
 - **`action-danger`** : même forme en `error` ("Delete", "Revoke"), avec un
@@ -172,7 +176,7 @@ bannière de clé fraîchement créée, qui prend une bordure 2px `ink` pour ne 
 - Passer par les tokens sémantiques (`bg-canvas`, `text-mute`, `border-hairline`),
   jamais par une valeur hexadécimale : c'est ce qui fait fonctionner le thème sombre.
 - Mettre un `aria-label` sur tout champ sans libellé visible.
-- Garder les cibles tactiles à 44px minimum (sauf l'éditeur de valeur en tableau, 40px).
+- Garder les cibles tactiles à 44px minimum, sauf deux exceptions assumées : l'éditeur de valeur en tableau (40px) et l'interrupteur (44x24px, conforme WCAG 2.5.8 niveau AA, 24px).
 
 ### Don't
 
@@ -186,11 +190,11 @@ bannière de clé fraîchement créée, qui prend une bordure 2px `ink` pour ne 
 
 ## Responsive Behavior
 
-| Nom     | Largeur   | Changements clés                                                                         |
-| ------- | --------- | ---------------------------------------------------------------------------------------- |
-| mobile  | < 640px   | Formulaires en colonne, e-mail masqué dans l'en-tête, tableaux défilants dans leur carte |
-| tablet  | 640-767px | Formulaires en ligne, e-mail visible                                                     |
-| desktop | 768px+    | Marges 40px, padding de carte 24px                                                       |
+| Nom     | Largeur   | Changements clés                                           |
+| ------- | --------- | ---------------------------------------------------------- |
+| mobile  | < 640px   | Formulaires en colonne, tableaux défilants dans leur carte |
+| tablet  | 640-767px | Formulaires en ligne                                       |
+| desktop | 768px+    | Marges 40px, padding de carte 24px                         |
 
 ## Iteration Guide
 
