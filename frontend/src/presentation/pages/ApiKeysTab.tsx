@@ -52,9 +52,11 @@ export function ApiKeysTab() {
       <div className="flex items-center justify-between gap-md">
         <h2 className="font-heading-md text-heading-md text-ink">
           Keys{' '}
-          <span className="tabular font-label-caps text-label-caps text-mute">
-            {keys.apiKeys.length}
-          </span>
+          {!keys.loading && (
+            <span className="tabular font-label-caps text-label-caps text-mute">
+              {keys.apiKeys.length}
+            </span>
+          )}
         </h2>
         <button
           type="button"
@@ -157,6 +159,7 @@ export function ApiKeysTab() {
         onClose={() => setRevealed(null)}
         title="Copy your new key"
         description="It won't be shown again. Store it in your service's secrets now."
+        dismissible={false}
       >
         {revealed && (
           <SecretReveal apiKey={revealed} onDone={() => setRevealed(null)} />
@@ -324,6 +327,7 @@ function SecretReveal({
       <code
         data-autofocus
         tabIndex={0}
+        aria-label="API key"
         className="break-all rounded border-2 border-ink bg-soft-cloud p-md font-mono text-[13px] text-ink"
       >
         {apiKey.key}

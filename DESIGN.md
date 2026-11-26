@@ -31,8 +31,8 @@ spacing: |
   | -- | -- | -- | -- | ------ | -- | ------- |
   | 4px | 8px | 12px | 18px | 16px | 24px | 48px |
 components: |
-  page-header, user-menu, button-primary, action-link, action-danger, text-input, select,
-  card, app-card, data-table, flag-toggle, scope-pill, environment-chip, secret-banner,
+  page-header, user-menu, button-primary, button-secondary, button-danger, text-input, select,
+  card, app-card, flag-toggle,
   history-panel, select-field, config-row, key-row, secret-reveal, dialog, confirm-dialog, menu-button, toast, text-field, app-tabs, flag-row,
   switch, badge, filter-chip, empty-state
 ---
@@ -69,8 +69,9 @@ sémantiques (danger, exposition navigateur). Tout le reste est encre sur papier
   `{colors.success}` est défini mais réservé (non utilisé par l'écran actuel).
 - Thème clair et sombre automatique (`prefers-color-scheme`), mêmes tokens
   sémantiques, ordre d'élévation identique : `surface` = page, `canvas` = carte.
-- Tableaux denses, `label-caps` en en-tête, séparateurs `hairline-soft` sans
-  zébrage ; les clés techniques passent en monospace.
+- Listes denses : une carte par élément sur mobile, une grille à colonnes
+  d'environnement dès `md` (en-tête `label-caps`, séparateurs `hairline-soft`, sans
+  zébrage) ; les clés techniques passent en monospace.
 
 ## Colors
 
@@ -116,12 +117,13 @@ Les champs de saisie restent à 16px minimum (pas de zoom iOS au focus).
   56px + zone de statut iOS via `safe-area-inset-top`) : wordmark à gauche, menu
   utilisateur à droite. L'e-mail et "Log out" vivent dans ce menu, jamais dans la
   barre.
-- Chaque domaine (environnements, flags, configs, clés d'API) est une **carte**
-  empilée verticalement ; titre `heading-md`, compteur `label-caps` à droite, puis
-  contenu, puis le formulaire d'ajout en pied de carte.
-- Formulaires en ligne : champs `flex-wrap` qui se replient en colonne sous 640px.
-- Tableaux dans un conteneur `overflow-x-auto` : jamais de défilement horizontal
-  de la page ; la première colonne garde 10rem minimum.
+- Une app s'organise en onglets (Flags, Configs, Environments, API keys) ; chaque
+  onglet a, en tête, la recherche et l'action principale ("New …"), puis la liste.
+  La création passe par un dialogue (feuille en bas d'écran sur mobile), jamais par
+  un formulaire permanent.
+- Les grilles à colonnes d'environnement (flags, configs) vivent dans une région
+  `overflow-x-auto` focusable avec une largeur minimale calculée selon le nombre
+  d'environnements : jamais de défilement horizontal de la page.
 
 ## Elevation & Depth
 
@@ -129,8 +131,8 @@ Plat. Une carte est un `canvas` cerné d'un filet de 1px `hairline-soft` (box-sh
 de contour, comme `home-budget`), sans ombre portée. Les recouvrements sont
 limités à : le panneau du menu (filet `hairline`), la feuille/dialogue modal
 (`canvas` sur un voile noir à 50 %, le seul usage d'une couleur hors tokens, faute
-de token de voile), les toasts (pilule `ink`) et la bannière de clé fraîchement
-créée (bordure 2px `ink`).
+de token de voile), les toasts (pilule `ink`) et la clé fraîchement créée
+(cadre `ink` 2px dans le dialogue `secret-reveal`).
 
 ## Shapes
 
@@ -149,17 +151,14 @@ créée (bordure 2px `ink`).
   `hairline`, sans ombre.
 - **`button-primary`** : fond `ink`, texte `on-primary`, pilule, 44px de haut
   minimum, survol à 85% d'opacité. Une action principale par formulaire.
-- **`action-link`** : `label-caps` souligné en `mute` (zone 44px), actions de ligne
-  neutres ("History", `aria-expanded` quand le panneau est ouvert).
-- **`action-danger`** : même forme en `error` ("Delete", "Revoke"), avec un
-  `aria-label` qui nomme la cible.
+- **`button-secondary`** : bordure `hairline`, fond transparent, pilule 44px (Cancel,
+  Copy dans un dialogue).
+- **`button-danger`** : fond `error`, texte `on-primary` ; confirmation d'une action
+  destructive, uniquement dans un `confirm-dialog`.
 - **`text-input` / `select`** : 44px, bordure `hairline`, fond `canvas`, rayon
   1rem. Chaque champ a un `aria-label` (les placeholders ne sont pas des labels).
-  Dans un tableau, variante dense 40px.
+  Dans une grille de valeurs (configs), variante dense 44px sur mobile, 40px dès `md`.
 - **`card`** : `canvas`, filet `hairline-soft`, padding 16px (24px dès `md`).
-- **`data-table`** : en-tête `label-caps` `mute` sur filet `hairline`, lignes
-  séparées par `hairline-soft`, cellules `py-md`, nombres et dates en
-  `tabular-nums`.
 - **`app-card`** : carte cliquable (nom `body-md` 600, description ou slug distinct du
   nom, métadonnées `body-sm` : nombre d'environnements, de flags, dernier
   changement) suivie d'un menu "⋯" ; aucune action destructive visible.
@@ -207,14 +206,9 @@ créée (bordure 2px `ink`).
 - **`flag-toggle`** : case à cocher native (`role="switch"`), 44x24px, piste
   `mute` éteinte / `ink` allumée, curseur `canvas` / `surface`. Clavier et lecteurs
   d'écran conservés ; `aria-label` "<flag> in <environnement>".
-- **`scope-pill`** : `label-caps` en pilule ; `server` neutre (`ink` sur
-  `hairline`), `web` en `warning`.
-- **`environment-chip`** : pilule `hairline` avec bouton de suppression rond
-  (`aria-label` "Delete environment <nom>").
-- **`secret-banner`** : bordure 2px `ink`, clé en monospace sur `soft-cloud`,
-  bouton "Copy" ; `role="status"`.
-- **`history-panel`** : bloc `soft-cloud` sous la ligne du flag, entrées en
-  `body-sm` `mute`.
+- **`history-panel`** : carte « History » de la page d'un flag : une entrée par
+  changement (description du changement, âge en `label-caps`, date complète en
+  infobulle).
 
 ## Do's and Don'ts
 
@@ -224,7 +218,7 @@ créée (bordure 2px `ink`).
 - Passer par les tokens sémantiques (`bg-canvas`, `text-mute`, `border-hairline`),
   jamais par une valeur hexadécimale : c'est ce qui fait fonctionner le thème sombre.
 - Mettre un `aria-label` sur tout champ sans libellé visible.
-- Garder les cibles tactiles à 44px minimum, sauf deux exceptions assumées : l'éditeur de valeur en tableau (40px) et l'interrupteur (44x24px, conforme WCAG 2.5.8 niveau AA, 24px).
+- Garder les cibles tactiles à 44px minimum, sauf deux exceptions assumées : l'éditeur de valeur d'une grille dès `md` (40px) et l'interrupteur (44x24px, conforme WCAG 2.5.8 niveau AA, 24px).
 
 ### Don't
 
@@ -238,11 +232,11 @@ créée (bordure 2px `ink`).
 
 ## Responsive Behavior
 
-| Nom     | Largeur   | Changements clés                                           |
-| ------- | --------- | ---------------------------------------------------------- |
-| mobile  | < 640px   | Formulaires en colonne, tableaux défilants dans leur carte |
-| tablet  | 640-767px | Formulaires en ligne                                       |
-| desktop | 768px+    | Marges 40px, padding de carte 24px                         |
+| Nom     | Largeur   | Changements clés                                               |
+| ------- | --------- | -------------------------------------------------------------- |
+| mobile  | < 640px   | Dialogues en feuille, une carte par élément, onglets défilants |
+| tablet  | 640-767px | Formulaires en ligne                                           |
+| desktop | 768px+    | Marges 40px, padding de carte 24px                             |
 
 ## Iteration Guide
 

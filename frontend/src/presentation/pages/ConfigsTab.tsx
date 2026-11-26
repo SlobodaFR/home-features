@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { CSSProperties, FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ConfigEntryWithValues,
@@ -50,7 +50,7 @@ export function ConfigsTab() {
     );
   }, [configs, query]);
 
-  if (environments.length === 0) {
+  if (environments.length === 0 && (configs?.length ?? 0) === 0) {
     return (
       <EmptyState
         title="Add an environment first"
@@ -68,20 +68,24 @@ export function ConfigsTab() {
     config: ConfigEntryWithValues,
     environmentId: string,
     value: string,
-  ) {
+  ): Promise<boolean> {
     try {
       await apiClient.setConfigValue(config.id, environmentId, value);
       await refresh();
       notify(`${config.name} saved`);
+      return true;
     } catch (err) {
       notify(
         err instanceof Error ? err.message : 'Failed to set value',
         'error',
       );
+      return false;
     }
   }
 
-  const gridTemplate = `minmax(0,1fr) repeat(${environments.length}, minmax(140px, 1fr)) 44px`;
+  const gridTemplate = `minmax(0,1fr) ${environments.length > 0 ? `repeat(${environments.length}, minmax(140px, 1fr))` : ''} 44px`;
+  // Below this width the grid scrolls instead of squeezing the config name.
+  const gridMinWidth = 240 + environments.length * 152 + 44 + 48;
 
   return (
     <section aria-label="Configs" className="flex flex-col gap-md">
@@ -127,74 +131,84 @@ export function ConfigsTab() {
       ) : visible.length === 0 ? (
         <p className="text-mute">No config matches your search.</p>
       ) : (
-        <div>
+        <div
+          className="-m-px overflow-x-auto p-px"
+          tabIndex={0}
+          role="region"
+          aria-label="Configs by environment"
+        >
           <div
-            aria-hidden="true"
-            className="hidden items-end gap-md border-b border-hairline px-gutter pb-sm font-label-caps text-label-caps uppercase text-mute md:grid"
-            style={{ gridTemplateColumns: gridTemplate }}
+            className="md:min-w-[var(--grid-min)]"
+            style={{ '--grid-min': `${gridMinWidth}px` } as CSSProperties}
           >
-            <span>Config</span>
-            {environments.map((env) => (
-              <span key={env.id} className="truncate">
-                {env.name}
-              </span>
-            ))}
-            <span />
-          </div>
-          <ul className="flex flex-col gap-sm md:gap-0">
-            {visible.map((config) => (
-              <li
-                key={config.id}
-                className="flex flex-col gap-sm rounded bg-canvas p-gutter shadow-[0_0_0_1px_var(--color-hairline-soft)] md:grid md:items-start md:gap-md md:rounded-none md:bg-transparent md:py-sm md:shadow-none md:[&:not(:last-child)]:border-b md:[&:not(:last-child)]:border-hairline-soft"
-                style={{ gridTemplateColumns: gridTemplate }}
-              >
-                <div className="flex items-start justify-between gap-md md:contents">
-                  <div className="flex min-w-0 flex-col gap-xs md:py-xs">
-                    <span className="truncate font-body-md text-body-md font-semibold text-ink">
-                      {config.name}
-                    </span>
-                    <span className="flex flex-wrap items-center gap-sm">
-                      <span className="truncate font-mono text-[13px] text-mute">
-                        {config.key}
+            <div
+              aria-hidden="true"
+              className="hidden items-end gap-md border-b border-hairline px-gutter pb-sm font-label-caps text-label-caps uppercase text-mute md:grid"
+              style={{ gridTemplateColumns: gridTemplate }}
+            >
+              <span>Config</span>
+              {environments.map((env) => (
+                <span key={env.id} className="truncate">
+                  {env.name}
+                </span>
+              ))}
+              <span />
+            </div>
+            <ul className="flex flex-col gap-sm md:gap-0">
+              {visible.map((config) => (
+                <li
+                  key={config.id}
+                  className="flex flex-col gap-sm rounded bg-canvas p-gutter shadow-[0_0_0_1px_var(--color-hairline-soft)] md:grid md:items-start md:gap-md md:rounded-none md:bg-transparent md:py-sm md:shadow-none md:[&:not(:last-child)]:border-b md:[&:not(:last-child)]:border-hairline-soft"
+                  style={{ gridTemplateColumns: gridTemplate }}
+                >
+                  <div className="flex items-start justify-between gap-md md:contents">
+                    <div className="flex min-w-0 flex-col gap-xs md:py-xs">
+                      <span className="truncate font-body-md text-body-md font-semibold text-ink">
+                        {config.name}
                       </span>
-                      <Badge>{config.type}</Badge>
-                    </span>
+                      <span className="flex flex-wrap items-center gap-sm">
+                        <span className="truncate font-mono text-[13px] text-mute">
+                          {config.key}
+                        </span>
+                        <Badge>{config.type}</Badge>
+                      </span>
+                    </div>
+                    <div className="-mr-sm -mt-sm md:hidden">
+                      <ConfigMenu
+                        config={config}
+                        onDelete={() => setDeleting(config)}
+                      />
+                    </div>
                   </div>
-                  <div className="-mr-sm -mt-sm md:hidden">
+
+                  {environments.map((env) => {
+                    const value = config.values.find(
+                      (v) => v.environmentId === env.id,
+                    );
+                    return (
+                      <label key={env.id} className="flex flex-col gap-xs">
+                        <span className={`${labelClass} md:sr-only`}>
+                          {env.name}
+                        </span>
+                        <ValueEditor
+                          label={`${config.name} in ${env.name}`}
+                          value={value?.value ?? ''}
+                          onSave={(next) => saveValue(config, env.id, next)}
+                        />
+                      </label>
+                    );
+                  })}
+
+                  <div className="hidden md:block">
                     <ConfigMenu
                       config={config}
                       onDelete={() => setDeleting(config)}
                     />
                   </div>
-                </div>
-
-                {environments.map((env) => {
-                  const value = config.values.find(
-                    (v) => v.environmentId === env.id,
-                  );
-                  return (
-                    <label key={env.id} className="flex flex-col gap-xs">
-                      <span className={`${labelClass} md:sr-only`}>
-                        {env.name}
-                      </span>
-                      <ValueEditor
-                        label={`${config.name} in ${env.name}`}
-                        value={value?.value ?? ''}
-                        onSave={(next) => saveValue(config, env.id, next)}
-                      />
-                    </label>
-                  );
-                })}
-
-                <div className="hidden md:block">
-                  <ConfigMenu
-                    config={config}
-                    onDelete={() => setDeleting(config)}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
 
@@ -249,7 +263,10 @@ function ConfigMenu({
   );
 }
 
-/** Saves on blur when the draft differs, as the previous editor did. */
+/**
+ * Saves on blur (or Enter) when the draft differs. The draft follows the stored value, and a
+ * rejected save puts the stored value back instead of leaving text the server never kept.
+ */
 function ValueEditor({
   label,
   value,
@@ -257,9 +274,14 @@ function ValueEditor({
 }: {
   label: string;
   value: string;
-  onSave: (value: string) => Promise<void>;
+  onSave: (value: string) => Promise<boolean>;
 }) {
   const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
   return (
     <input
       className={cellInputClass}
@@ -267,7 +289,10 @@ function ValueEditor({
       value={draft}
       onChange={(event) => setDraft(event.target.value)}
       onBlur={() => {
-        if (draft !== value) void onSave(draft);
+        if (draft === value) return;
+        void onSave(draft).then((saved) => {
+          if (!saved) setDraft(value);
+        });
       }}
       onKeyDown={(event) => {
         if (event.key === 'Enter') event.currentTarget.blur();
