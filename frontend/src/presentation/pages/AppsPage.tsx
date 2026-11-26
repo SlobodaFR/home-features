@@ -2,12 +2,19 @@ import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApps } from '../../application/use-apps';
 import { slugify } from '../../domain/slugify';
-import { useAuth } from '../auth/AuthProvider';
+import { PageShell } from '../components/PageShell';
 import { apiClient } from '../../infrastructure/api-client';
+import {
+  actionDanger,
+  buttonPrimary,
+  cardClass,
+  inputClass,
+  labelClass,
+  noticeError,
+} from '../ui';
 
 export function AppsPage() {
   const { loading, error, apps, refresh } = useApps();
-  const { user, logout } = useAuth();
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
@@ -48,92 +55,53 @@ export function AppsPage() {
   }
 
   return (
-    <main className="min-h-screen px-margin-mobile py-section max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-xl">
-        <h1 className="font-heading-xl text-heading-xl text-ink">
-          Kinetic Feature Management
-        </h1>
-        <div className="flex items-center gap-md">
-          <span className="text-mute font-body-sm text-body-sm">
-            {user?.email}
-          </span>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className="font-label-caps text-label-caps text-mute border-b border-mute uppercase"
-          >
-            Log out
-          </button>
-        </div>
-      </div>
+    <PageShell>
+      <h1 className="font-heading-xl text-heading-xl text-ink">Apps</h1>
 
-      <section className="mb-xl">
-        <h2 className="font-heading-md text-heading-md text-ink mb-md">
-          New app
-        </h2>
-        <form
-          onSubmit={(e) => void handleSubmit(e)}
-          className="flex flex-col gap-sm max-w-md"
-        >
-          <input
-            className="border border-hairline rounded px-md py-sm"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <input
-            className="border border-hairline rounded px-md py-sm"
-            placeholder={`Slug (default: ${slugify(name) || 'auto'})`}
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-          />
-          <input
-            className="border border-hairline rounded px-md py-sm"
-            placeholder="Description (optional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-          {formError && (
-            <p className="text-error font-body-sm text-body-sm">{formError}</p>
+      <section className={cardClass} aria-labelledby="apps-heading">
+        <div className="mb-md flex items-baseline justify-between gap-md">
+          <h2
+            id="apps-heading"
+            className="font-heading-md text-heading-md text-ink"
+          >
+            All apps
+          </h2>
+          {apps.length > 0 && (
+            <span className={`${labelClass} tabular`}>{apps.length}</span>
           )}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="bg-ink text-surface px-xl py-md rounded-full font-button-md self-start disabled:opacity-50"
-          >
-            Create app
-          </button>
-        </form>
-      </section>
-
-      <section>
-        <h2 className="font-heading-md text-heading-md text-ink mb-md">Apps</h2>
+        </div>
         {loading && apps.length === 0 ? (
-          <p className="text-mute">Loading...</p>
+          <p className="text-mute" role="status">
+            Loading...
+          </p>
         ) : error ? (
           <p className="text-error">Error: {error}</p>
         ) : apps.length === 0 ? (
           <p className="text-mute">No apps yet.</p>
         ) : (
-          <ul className="flex flex-col gap-sm">
+          <ul className="flex flex-col divide-y divide-hairline-soft border-y border-hairline-soft">
             {apps.map((app) => (
               <li
                 key={app.id}
-                className="border border-hairline rounded px-md py-sm flex justify-between items-center"
+                className="flex items-center justify-between gap-md py-sm"
               >
-                <Link to={`/apps/${app.id}`} className="flex flex-col">
-                  <span className="font-body-md text-body-md text-ink">
+                <Link
+                  to={`/apps/${app.id}`}
+                  className="flex min-h-[44px] min-w-0 flex-1 flex-col justify-center"
+                >
+                  <span className="truncate font-body-md text-body-md font-semibold text-ink">
                     {app.name}
                   </span>
-                  <span className="font-body-sm text-body-sm text-mute">
+                  <span className="truncate font-body-sm text-body-sm text-mute">
                     {app.slug}
+                    {app.description ? ` · ${app.description}` : ''}
                   </span>
                 </Link>
                 <button
                   type="button"
                   onClick={() => void handleDelete(app.id, app.name)}
-                  className="font-label-caps text-label-caps text-error border-b border-error uppercase"
+                  aria-label={`Delete app ${app.name}`}
+                  className={actionDanger}
                 >
                   Delete
                 </button>
@@ -142,6 +110,50 @@ export function AppsPage() {
           </ul>
         )}
       </section>
-    </main>
+
+      <section className={cardClass} aria-labelledby="new-app-heading">
+        <h2
+          id="new-app-heading"
+          className="mb-md font-heading-md text-heading-md text-ink"
+        >
+          New app
+        </h2>
+        <form
+          onSubmit={(e) => void handleSubmit(e)}
+          className="flex max-w-md flex-col gap-sm"
+        >
+          <input
+            className={inputClass}
+            aria-label="Name"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <input
+            className={inputClass}
+            aria-label="Slug"
+            placeholder={`Slug (default: ${slugify(name) || 'auto'})`}
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+          />
+          <input
+            className={inputClass}
+            aria-label="Description"
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          {formError && <p className={noticeError}>{formError}</p>}
+          <button
+            type="submit"
+            disabled={submitting}
+            className={`${buttonPrimary} self-start`}
+          >
+            Create app
+          </button>
+        </form>
+      </section>
+    </PageShell>
   );
 }

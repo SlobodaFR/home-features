@@ -21,6 +21,20 @@ import {
 } from '../../domain/flag-value-change';
 import { slugify } from '../../domain/slugify';
 import { apiClient } from '../../infrastructure/api-client';
+import { ArrowLeftIcon } from '../components/Icons';
+import { PageShell } from '../components/PageShell';
+import {
+  actionDanger,
+  actionLink,
+  buttonPrimary,
+  cardClass,
+  cellInputClass,
+  inputClass,
+  labelClass,
+  pillClass,
+  tdClass,
+  thClass,
+} from '../ui';
 
 export function AppDetailPage() {
   const { appId } = useParams<{ appId: string }>();
@@ -53,13 +67,16 @@ export function AppDetailPage() {
 
   if (!appId) {
     return (
-      <p className="text-error px-margin-mobile py-section">Missing app id.</p>
+      <p className="px-margin-mobile py-section text-error">Missing app id.</p>
     );
   }
 
   if (loading && !overview) {
     return (
-      <div className="px-margin-mobile py-section text-center text-mute">
+      <div
+        className="px-margin-mobile py-section text-center text-mute"
+        role="status"
+      >
         Loading...
       </div>
     );
@@ -255,297 +272,316 @@ export function AppDetailPage() {
   }
 
   return (
-    <main className="min-h-screen px-margin-mobile py-section max-w-5xl mx-auto">
-      <Link
-        to="/"
-        className="font-label-caps text-label-caps text-mute border-b border-mute uppercase"
-      >
-        Back to apps
-      </Link>
-      <h1 className="font-heading-xl text-heading-xl text-ink mt-md mb-xl">
-        {app.name}
-      </h1>
+    <PageShell>
+      <div>
+        <Link
+          to="/"
+          className="-ml-sm inline-flex min-h-[44px] items-center gap-xs px-sm font-label-caps text-label-caps uppercase text-mute hover:text-ink"
+        >
+          <ArrowLeftIcon />
+          Back to apps
+        </Link>
+        <h1 className="font-heading-xl text-heading-xl text-ink">{app.name}</h1>
+        <p className="font-body-sm text-body-sm text-mute">
+          {app.slug}
+          {app.description ? ` · ${app.description}` : ''}
+        </p>
+      </div>
 
-      <section className="mb-xl">
-        <h2 className="font-heading-md text-heading-md text-ink mb-md">
+      <section className={cardClass} aria-labelledby="environments-heading">
+        <SectionTitle id="environments-heading" count={environments.length}>
           Environments
-        </h2>
-        <div className="flex flex-wrap gap-sm mb-md">
+        </SectionTitle>
+        <ul className="mb-md flex flex-wrap gap-sm">
           {environments.map((env) => (
-            <span
+            <li
               key={env.id}
-              className="border border-hairline rounded px-md py-sm flex items-center gap-sm"
+              className="flex items-center gap-xs rounded-full border border-hairline py-xs pl-md pr-xs font-body-sm text-body-sm text-ink"
             >
               {env.name}
               <button
                 type="button"
                 onClick={() => void handleDeleteEnvironment(env.id, env.name)}
-                className="text-error text-label-caps font-label-caps uppercase"
+                aria-label={`Delete environment ${env.name}`}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-error hover:bg-soft-cloud"
               >
-                x
+                <span aria-hidden="true">x</span>
               </button>
-            </span>
+            </li>
           ))}
-        </div>
+        </ul>
         <form
           onSubmit={(e) => void handleCreateEnvironment(e)}
-          className="flex gap-sm"
+          className={formClass}
         >
           <input
-            className="border border-hairline rounded px-md py-sm"
+            className={`${inputClass} ${fieldGrow}`}
+            aria-label="Environment name"
             placeholder="Environment name (e.g. production)"
             value={envName}
             onChange={(e) => setEnvName(e.target.value)}
             required
           />
           <input
-            className="border border-hairline rounded px-md py-sm"
+            className={`${inputClass} ${fieldGrow}`}
+            aria-label="Environment slug"
             placeholder={`Slug (default: ${slugify(envName) || 'auto'})`}
             value={envSlug}
             onChange={(e) => setEnvSlug(e.target.value)}
           />
-          <button
-            type="submit"
-            className="bg-ink text-surface px-xl py-md rounded-full font-button-md"
-          >
+          <button type="submit" className={buttonPrimary}>
             Add
           </button>
         </form>
       </section>
 
-      <section className="mb-xl">
-        <h2 className="font-heading-md text-heading-md text-ink mb-md">
+      <section className={cardClass} aria-labelledby="flags-heading">
+        <SectionTitle id="flags-heading" count={flags.length}>
           Feature flags
-        </h2>
+        </SectionTitle>
         {environments.length === 0 ? (
-          <p className="text-mute mb-md">Add an environment first.</p>
+          <p className="mb-md text-mute">Add an environment first.</p>
         ) : (
-          <table className="w-full border-collapse mb-md">
-            <thead>
-              <tr>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm">
-                  Flag
-                </th>
-                {environments.map((env) => (
+          <div className="mb-md overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-hairline">
+                  <th className={thClass}>Flag</th>
+                  {environments.map((env) => (
+                    <th key={env.id} className={thClass}>
+                      {env.name}
+                    </th>
+                  ))}
                   <th
-                    key={env.id}
-                    className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md"
+                    className={thClass}
+                    title="Visible to web API keys (browser-facing)"
                   >
-                    {env.name}
+                    Client
                   </th>
-                ))}
-                <th
-                  className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md"
-                  title="Visible to web API keys (browser-facing)"
-                >
-                  Client
-                </th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {flags.map((flag) => (
-                <Fragment key={flag.id}>
-                  <tr className="border-t border-hairline">
-                    <td className="py-sm">
-                      <div className="font-body-md text-body-md text-ink">
-                        {flag.name}
-                      </div>
-                      <div className="font-body-sm text-body-sm text-mute">
-                        {flag.key}
-                      </div>
-                      <div className="font-body-sm text-body-sm text-mute">
-                        {lastEvaluatedLabel(flag.lastEvaluatedAt)}
-                      </div>
-                    </td>
-                    {environments.map((env) => {
-                      const value = flag.values.find(
-                        (v) => v.environmentId === env.id,
-                      );
-                      return (
-                        <td key={env.id} className="py-sm px-md">
-                          <input
-                            type="checkbox"
-                            checked={value?.enabled ?? false}
-                            onChange={(e) =>
-                              void handleToggleFlag(
-                                flag.id,
-                                env.id,
-                                e.target.checked,
-                              )
-                            }
-                          />
-                        </td>
-                      );
-                    })}
-                    <td className="py-sm px-md">
-                      <input
-                        type="checkbox"
-                        aria-label={`Expose ${flag.key} to web keys`}
-                        checked={flag.clientExposed}
-                        onChange={(e) =>
-                          void handleToggleClientExposed(flag, e.target.checked)
-                        }
-                      />
-                    </td>
-                    <td className="py-sm whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={() => void handleToggleHistory(flag.id)}
-                        className="font-label-caps text-label-caps text-mute border-b border-mute uppercase mr-md"
-                      >
-                        History
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleDeleteFlag(flag)}
-                        className="font-label-caps text-label-caps text-error border-b border-error uppercase"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                  {history?.flagId === flag.id && (
+                  <th className={thClass}>
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-hairline-soft">
+                {flags.map((flag) => (
+                  <Fragment key={flag.id}>
                     <tr>
-                      <td
-                        colSpan={environments.length + 3}
-                        className="pb-md font-body-sm text-body-sm text-mute"
-                      >
-                        {history.changes.length === 0 ? (
-                          'No value change recorded yet.'
-                        ) : (
-                          <ul>
-                            {history.changes.map((change) => (
-                              <li key={change.id}>
-                                {new Date(change.at).toLocaleString()} —{' '}
-                                {describeChange(change, environments)}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
+                      <td className={tdClass}>
+                        <div className="font-body-md text-body-md font-semibold text-ink">
+                          {flag.name}
+                        </div>
+                        <code className="font-mono text-[13px] text-mute">
+                          {flag.key}
+                        </code>
+                        <div className="font-body-sm text-body-sm text-mute">
+                          {lastEvaluatedLabel(flag.lastEvaluatedAt)}
+                        </div>
+                      </td>
+                      {environments.map((env) => {
+                        const value = flag.values.find(
+                          (v) => v.environmentId === env.id,
+                        );
+                        return (
+                          <td key={env.id} className={tdClass}>
+                            <input
+                              type="checkbox"
+                              role="switch"
+                              className="toggle"
+                              aria-label={`${flag.name} in ${env.name}`}
+                              checked={value?.enabled ?? false}
+                              onChange={(e) =>
+                                void handleToggleFlag(
+                                  flag.id,
+                                  env.id,
+                                  e.target.checked,
+                                )
+                              }
+                            />
+                          </td>
+                        );
+                      })}
+                      <td className={tdClass}>
+                        <input
+                          type="checkbox"
+                          role="switch"
+                          className="toggle"
+                          aria-label={`Expose ${flag.key} to web keys`}
+                          checked={flag.clientExposed}
+                          onChange={(e) =>
+                            void handleToggleClientExposed(
+                              flag,
+                              e.target.checked,
+                            )
+                          }
+                        />
+                      </td>
+                      <td className={`${tdClass} whitespace-nowrap text-right`}>
+                        <button
+                          type="button"
+                          onClick={() => void handleToggleHistory(flag.id)}
+                          aria-expanded={history?.flagId === flag.id}
+                          className={actionLink}
+                        >
+                          History
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteFlag(flag)}
+                          aria-label={`Delete flag ${flag.name}`}
+                          className={actionDanger}
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
+                    {history?.flagId === flag.id && (
+                      <tr>
+                        <td
+                          colSpan={environments.length + 3}
+                          className="pb-md pl-0 font-body-sm text-body-sm text-mute"
+                        >
+                          <div className="rounded bg-soft-cloud p-md">
+                            {history.changes.length === 0 ? (
+                              'No value change recorded yet.'
+                            ) : (
+                              <ul className="flex flex-col gap-xs">
+                                {history.changes.map((change) => (
+                                  <li key={change.id} className="tabular">
+                                    {new Date(change.at).toLocaleString()} —{' '}
+                                    {describeChange(change, environments)}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-        <form
-          onSubmit={(e) => void handleCreateFlag(e)}
-          className="flex gap-sm"
-        >
+        <form onSubmit={(e) => void handleCreateFlag(e)} className={formClass}>
           <input
-            className="border border-hairline rounded px-md py-sm"
+            className={`${inputClass} ${fieldGrow}`}
+            aria-label="Flag name"
             placeholder="Flag name"
             value={flagName}
             onChange={(e) => setFlagName(e.target.value)}
             required
           />
           <input
-            className="border border-hairline rounded px-md py-sm"
+            className={`${inputClass} ${fieldGrow}`}
+            aria-label="Flag key"
             placeholder={`Key (default: ${slugify(flagName) || 'auto'})`}
             value={flagKey}
             onChange={(e) => setFlagKey(e.target.value)}
           />
-          <button
-            type="submit"
-            className="bg-ink text-surface px-xl py-md rounded-full font-button-md"
-          >
+          <button type="submit" className={buttonPrimary}>
             Add flag
           </button>
         </form>
       </section>
 
-      <section className="mb-xl">
-        <h2 className="font-heading-md text-heading-md text-ink mb-md">
+      <section className={cardClass} aria-labelledby="configs-heading">
+        <SectionTitle id="configs-heading" count={configs.length}>
           Configs
-        </h2>
+        </SectionTitle>
         {environments.length === 0 ? (
-          <p className="text-mute mb-md">Add an environment first.</p>
+          <p className="mb-md text-mute">Add an environment first.</p>
         ) : (
-          <table className="w-full border-collapse mb-md">
-            <thead>
-              <tr>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm">
-                  Config
-                </th>
-                {environments.map((env) => (
-                  <th
-                    key={env.id}
-                    className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md"
-                  >
-                    {env.name}
+          <div className="mb-md overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-hairline">
+                  <th className={thClass}>Config</th>
+                  {environments.map((env) => (
+                    <th key={env.id} className={thClass}>
+                      {env.name}
+                    </th>
+                  ))}
+                  <th className={thClass}>
+                    <span className="sr-only">Actions</span>
                   </th>
-                ))}
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {configs.map((config) => (
-                <tr key={config.id} className="border-t border-hairline">
-                  <td className="py-sm">
-                    <div className="font-body-md text-body-md text-ink">
-                      {config.name}
-                    </div>
-                    <div className="font-body-sm text-body-sm text-mute">
-                      {config.key} ({config.type})
-                    </div>
-                  </td>
-                  {environments.map((env) => {
-                    const value = config.values.find(
-                      (v) => v.environmentId === env.id,
-                    );
-                    return (
-                      <td key={env.id} className="py-sm px-md">
-                        <ConfigValueEditor
-                          value={value?.value ?? ''}
-                          onSave={(newValue) =>
-                            void handleSetConfigValue(
-                              config.id,
-                              env.id,
-                              newValue,
-                            )
-                          }
-                        />
-                      </td>
-                    );
-                  })}
-                  <td className="py-sm">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void handleDeleteConfig(config.id, config.name)
-                      }
-                      className="font-label-caps text-label-caps text-error border-b border-error uppercase"
-                    >
-                      Delete
-                    </button>
-                  </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-hairline-soft">
+                {configs.map((config) => (
+                  <tr key={config.id}>
+                    <td className={tdClass}>
+                      <div className="font-body-md text-body-md font-semibold text-ink">
+                        {config.name}
+                      </div>
+                      <div className="font-body-sm text-body-sm text-mute">
+                        <code className="font-mono text-[13px]">
+                          {config.key}
+                        </code>{' '}
+                        ({config.type})
+                      </div>
+                    </td>
+                    {environments.map((env) => {
+                      const value = config.values.find(
+                        (v) => v.environmentId === env.id,
+                      );
+                      return (
+                        <td key={env.id} className={tdClass}>
+                          <ConfigValueEditor
+                            label={`${config.name} in ${env.name}`}
+                            value={value?.value ?? ''}
+                            onSave={(newValue) =>
+                              void handleSetConfigValue(
+                                config.id,
+                                env.id,
+                                newValue,
+                              )
+                            }
+                          />
+                        </td>
+                      );
+                    })}
+                    <td className={`${tdClass} whitespace-nowrap text-right`}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void handleDeleteConfig(config.id, config.name)
+                        }
+                        aria-label={`Delete config ${config.name}`}
+                        className={actionDanger}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         <form
           onSubmit={(e) => void handleCreateConfig(e)}
-          className="flex gap-sm"
+          className={formClass}
         >
           <input
-            className="border border-hairline rounded px-md py-sm"
+            className={`${inputClass} ${fieldGrow}`}
+            aria-label="Config name"
             placeholder="Config name"
             value={configName}
             onChange={(e) => setConfigName(e.target.value)}
             required
           />
           <input
-            className="border border-hairline rounded px-md py-sm"
+            className={`${inputClass} ${fieldGrow}`}
+            aria-label="Config key"
             placeholder={`Key (default: ${slugify(configName) || 'auto'})`}
             value={configKey}
             onChange={(e) => setConfigKey(e.target.value)}
           />
           <select
-            className="border border-hairline rounded px-md py-sm"
+            aria-label="Config type"
+            className={`${inputClass} sm:w-auto`}
             value={configType}
             onChange={(e) => {
               const selected = Object.values(ConfigValueType).find(
@@ -562,40 +598,43 @@ export function AppDetailPage() {
               </option>
             ))}
           </select>
-          <button
-            type="submit"
-            className="bg-ink text-surface px-xl py-md rounded-full font-button-md"
-          >
+          <button type="submit" className={buttonPrimary}>
             Add config
           </button>
         </form>
       </section>
 
-      <section className="mb-xl">
-        <h2 className="font-heading-md text-heading-md text-ink mb-md">
+      <section className={cardClass} aria-labelledby="api-keys-heading">
+        <SectionTitle id="api-keys-heading" count={apiKeys.apiKeys.length}>
           API keys
-        </h2>
-        <p className="font-body-sm text-body-sm text-mute mb-md">
+        </SectionTitle>
+        <p className="mb-md max-w-prose font-body-sm text-body-sm text-mute">
           An API key reads one environment of this app, sent as an{' '}
-          <code>Authorization: Bearer hf_…</code> header. A <em>server</em> key
-          sees every flag and config; a <em>web</em> key (behind a browser
-          proxy) sees only the client-exposed flags.
+          <code className="font-mono text-[13px] text-ink">
+            Authorization: Bearer hf_…
+          </code>{' '}
+          header. A <em>server</em> key sees every flag and config; a{' '}
+          <em>web</em> key (behind a browser proxy) sees only the client-exposed
+          flags.
         </p>
 
         {createdApiKey && (
-          <div className="border border-hairline rounded px-md py-md mb-md bg-surface">
-            <p className="font-body-sm text-body-sm text-ink mb-sm">
+          <div
+            role="status"
+            className="mb-md rounded border-2 border-ink bg-canvas p-md"
+          >
+            <p className="mb-sm font-body-sm text-body-sm text-ink">
               New key <strong>{createdApiKey.name}</strong> created. Copy it now
               - it won't be shown again.
             </p>
-            <div className="flex gap-sm items-center">
-              <code className="font-body-sm text-body-sm break-all border border-hairline rounded px-sm py-xs flex-1">
+            <div className="flex flex-wrap items-center gap-sm">
+              <code className="min-w-0 flex-1 basis-64 break-all rounded border border-hairline bg-soft-cloud px-md py-sm font-mono text-[13px] text-ink">
                 {createdApiKey.key}
               </code>
               <button
                 type="button"
                 onClick={() => void handleCopyApiKey(createdApiKey.key)}
-                className="bg-ink text-surface px-md py-sm rounded-full font-button-md"
+                className={buttonPrimary}
               >
                 Copy
               </button>
@@ -604,79 +643,91 @@ export function AppDetailPage() {
         )}
 
         {apiKeys.error && (
-          <p className="text-error mb-md">Error: {apiKeys.error}</p>
+          <p className="mb-md text-error">Error: {apiKeys.error}</p>
         )}
 
         {apiKeys.apiKeys.length === 0 ? (
-          <p className="text-mute mb-md">No API keys yet.</p>
+          <p className="mb-md text-mute">No API keys yet.</p>
         ) : (
-          <table className="w-full border-collapse mb-md">
-            <thead>
-              <tr>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm">
-                  Name
-                </th>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
-                  Environment
-                </th>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
-                  Scope
-                </th>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
-                  Created
-                </th>
-                <th className="text-left font-label-caps text-label-caps text-mute uppercase py-sm px-md">
-                  Last used
-                </th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {apiKeys.apiKeys.map((apiKey) => (
-                <tr key={apiKey.id} className="border-t border-hairline">
-                  <td className="py-sm font-body-md text-body-md text-ink">
-                    {apiKey.name}
-                  </td>
-                  <td className="py-sm px-md font-body-sm text-body-sm text-ink">
-                    {environmentNameOf(apiKey.environmentId, environments)}
-                  </td>
-                  <td
-                    className="py-sm px-md font-body-sm text-body-sm text-ink"
-                    title={apiKeyScopeHint(apiKey.scope)}
-                  >
-                    {apiKey.scope}
-                  </td>
-                  <td className="py-sm px-md font-body-sm text-body-sm text-mute">
-                    {new Date(apiKey.createdAt).toLocaleString()}
-                  </td>
-                  <td className="py-sm px-md font-body-sm text-body-sm text-mute">
-                    {apiKey.lastUsedAt
-                      ? new Date(apiKey.lastUsedAt).toLocaleString()
-                      : 'Never'}
-                  </td>
-                  <td className="py-sm">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void handleDeleteApiKey(apiKey.id, apiKey.name)
-                      }
-                      className="font-label-caps text-label-caps text-error border-b border-error uppercase"
-                    >
-                      Revoke
-                    </button>
-                  </td>
+          <div className="mb-md overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-hairline">
+                  <th className={thClass}>Name</th>
+                  <th className={thClass}>Environment</th>
+                  <th className={thClass}>Scope</th>
+                  <th className={thClass}>Created</th>
+                  <th className={thClass}>Last used</th>
+                  <th className={thClass}>
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-hairline-soft">
+                {apiKeys.apiKeys.map((apiKey) => (
+                  <tr key={apiKey.id}>
+                    <td
+                      className={`${tdClass} font-body-md text-body-md font-semibold text-ink`}
+                    >
+                      {apiKey.name}
+                    </td>
+                    <td
+                      className={`${tdClass} font-body-sm text-body-sm text-ink`}
+                    >
+                      {environmentNameOf(apiKey.environmentId, environments)}
+                    </td>
+                    <td
+                      className={tdClass}
+                      title={apiKeyScopeHint(apiKey.scope)}
+                    >
+                      <span
+                        className={`${pillClass} ${
+                          apiKey.scope === 'web'
+                            ? 'border-warning text-warning'
+                            : 'border-hairline text-ink'
+                        }`}
+                      >
+                        {apiKey.scope}
+                      </span>
+                    </td>
+                    <td
+                      className={`${tdClass} tabular whitespace-nowrap font-body-sm text-body-sm text-mute`}
+                    >
+                      {new Date(apiKey.createdAt).toLocaleString()}
+                    </td>
+                    <td
+                      className={`${tdClass} tabular whitespace-nowrap font-body-sm text-body-sm text-mute`}
+                    >
+                      {apiKey.lastUsedAt
+                        ? new Date(apiKey.lastUsedAt).toLocaleString()
+                        : 'Never'}
+                    </td>
+                    <td className={`${tdClass} whitespace-nowrap text-right`}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void handleDeleteApiKey(apiKey.id, apiKey.name)
+                        }
+                        aria-label={`Revoke API key ${apiKey.name}`}
+                        className={actionDanger}
+                      >
+                        Revoke
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <form
           onSubmit={(e) => void handleCreateApiKey(e)}
-          className="flex gap-sm"
+          className={formClass}
         >
           <input
-            className="border border-hairline rounded px-md py-sm"
+            className={`${inputClass} ${fieldGrow}`}
+            aria-label="Key name"
             placeholder="Key name (e.g. production server)"
             value={apiKeyName}
             onChange={(e) => setApiKeyName(e.target.value)}
@@ -684,7 +735,7 @@ export function AppDetailPage() {
           />
           <select
             aria-label="Environment"
-            className="border border-hairline rounded px-md py-sm"
+            className={`${inputClass} sm:w-auto`}
             value={apiKeyEnvironmentId || environments[0]?.id || ''}
             onChange={(e) => setApiKeyEnvironmentId(e.target.value)}
             required
@@ -697,7 +748,7 @@ export function AppDetailPage() {
           </select>
           <select
             aria-label="Scope"
-            className="border border-hairline rounded px-md py-sm"
+            className={`${inputClass} sm:w-auto`}
             value={apiKeyScope}
             title={apiKeyScopeHint(apiKeyScope)}
             onChange={(e) => {
@@ -718,20 +769,45 @@ export function AppDetailPage() {
           <button
             type="submit"
             disabled={environments.length === 0}
-            className="bg-ink text-surface px-xl py-md rounded-full font-button-md disabled:opacity-50"
+            className={buttonPrimary}
           >
             Generate key
           </button>
         </form>
       </section>
-    </main>
+    </PageShell>
+  );
+}
+
+const formClass =
+  'flex flex-col gap-sm sm:flex-row sm:flex-wrap sm:items-start';
+const fieldGrow = 'sm:w-auto sm:flex-1 sm:basis-48';
+
+function SectionTitle({
+  id,
+  count,
+  children,
+}: {
+  id: string;
+  count: number;
+  children: string;
+}) {
+  return (
+    <div className="mb-md flex items-baseline justify-between gap-md">
+      <h2 id={id} className="font-heading-md text-heading-md text-ink">
+        {children}
+      </h2>
+      <span className={`${labelClass} tabular`}>{count}</span>
+    </div>
   );
 }
 
 function ConfigValueEditor({
+  label,
   value,
   onSave,
 }: {
+  label: string;
   value: string;
   onSave: (value: string) => void;
 }) {
@@ -739,7 +815,8 @@ function ConfigValueEditor({
 
   return (
     <input
-      className="border border-hairline rounded px-sm py-xs w-32"
+      className={cellInputClass}
+      aria-label={label}
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => {
