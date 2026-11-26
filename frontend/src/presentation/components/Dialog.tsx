@@ -8,7 +8,10 @@ interface DialogProps {
   title: string;
   description?: string;
   children: ReactNode;
-  /** false: only the dialog's own buttons close it (no backdrop click, no Escape). */
+  /**
+   * false: only the dialog's own buttons close it (no backdrop click, no Escape, whether
+   * pressed once, twice or as a `cancel` event): the parent flips `open` itself.
+   */
   dismissible?: boolean;
 }
 
@@ -44,7 +47,15 @@ export function Dialog({
       ref={ref}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
-      onClose={onClose}
+      onClose={() => {
+        // Escape pressed twice (or any UA close path that ignores preventDefault on `cancel`)
+        // closes the native dialog anyway: reopen it, the parent still considers it open.
+        if (!dismissible && open) {
+          ref.current?.showModal();
+          return;
+        }
+        onClose();
+      }}
       onCancel={(event) => {
         if (!dismissible) event.preventDefault();
       }}

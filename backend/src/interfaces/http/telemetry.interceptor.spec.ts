@@ -25,6 +25,7 @@ import { RuntimeHealthMonitor } from '../../infrastructure/observability/runtime
 import { serveStaticOptions } from '../../static-assets';
 import { FakeTelemetry } from '../../test-support/fake-telemetry';
 import { HealthController } from './controllers/health.controller';
+import { GetCurrentUserUseCase } from '../../application/auth/get-current-user.use-case';
 import { MeController } from './controllers/me.controller';
 import { PublicApiController } from './controllers/public-api.controller';
 import { ApiKeyGuard } from './guards/api-key.guard';
@@ -80,6 +81,10 @@ describe('HTTP telemetry (real routes, stubbed use cases)', () => {
       ],
       providers: [
         { provide: Telemetry, useValue: telemetry },
+        {
+          provide: GetCurrentUserUseCase,
+          useValue: { execute: (user: object) => Promise.resolve(user) },
+        },
         { provide: APP_INTERCEPTOR, useClass: TelemetryInterceptor },
         { provide: APP_GUARD, useClass: SignedInGuard },
         { provide: RuntimeHealthMonitor, useValue: { lastSample: null } },

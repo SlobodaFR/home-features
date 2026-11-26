@@ -43,7 +43,7 @@ describe('security headers', () => {
     expect(csp).not.toContain("'unsafe-eval'");
     expect(csp).toContain("style-src 'self' https://fonts.googleapis.com");
     expect(csp).toContain("font-src 'self' https://fonts.gstatic.com");
-    expect(csp).toContain("img-src 'self' data:");
+    expect(csp).toMatch(/img-src 'self' data: https:\/\/ui-avatars\.com(;|$)/);
     expect(csp).toContain("connect-src 'self'");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
@@ -79,5 +79,39 @@ describe('security headers', () => {
       .expect(404);
 
     expectStrictHeaders(response.headers);
+  });
+
+  describe('img-src with an auth service URL', () => {
+    async function cspFor(authServiceUrl: string | undefined) {
+      const moduleRef = await Test.createTestingModule({
+        controllers: [StubController],
+      }).compile();
+      const other = moduleRef.createNestApplication<NestExpressApplication>();
+      applySecurityHeaders(other, authServiceUrl);
+      await other.init();
+      const res = await request(other.getHttpServer()).get('/ping');
+      await other.close();
+      return res.headers['content-security-policy'];
+    }
+
+    it('allows exactly the auth origin and ui-avatars', async () => {
+      expect(await cspFor('https://auth.example.test')).toContain(
+        "img-src 'self' data: https://auth.example.test https://ui-avatars.com;",
+      );
+    });
+
+    it('reduces the URL to its origin', async () => {
+      const csp = await cspFor('https://auth.example.test/some/path/?q=1');
+      expect(csp).toContain(
+        "img-src 'self' data: https://auth.example.test https://ui-avatars.com;",
+      );
+      expect(csp).not.toContain('/some/path');
+    });
+
+    it('adds nothing for an unparsable URL and does not throw', async () => {
+      expect(await cspFor('not a url')).toContain(
+        "img-src 'self' data: https://ui-avatars.com;",
+      );
+    });
   });
 });
