@@ -75,6 +75,7 @@ function ConfirmBody({
             className={inputClass}
             value={typed}
             onChange={(event) => setTyped(event.target.value)}
+            data-autofocus
             autoComplete="off"
             autoCapitalize="off"
             spellCheck={false}

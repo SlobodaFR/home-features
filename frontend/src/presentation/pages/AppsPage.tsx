@@ -257,7 +257,7 @@ function CreateAppForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
-        autoFocus
+        data-autofocus
         placeholder="Home Budget"
       />
       <TextField

@@ -69,6 +69,9 @@ export function MenuButton({
               key={item.label}
               type="button"
               onClick={() => {
+                // Hand focus back to the trigger first: a dialog opened by the action
+                // records it as the element to restore on close.
+                buttonRef.current?.focus();
                 setOpen(false);
                 item.onSelect();
               }}

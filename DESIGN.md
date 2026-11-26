@@ -32,7 +32,8 @@ spacing: |
   | 4px | 8px | 12px | 18px | 16px | 24px | 48px |
 components: |
   page-header, user-menu, button-primary, action-link, action-danger, text-input, select,
-  card, data-table, flag-toggle, scope-pill, environment-chip, secret-banner, history-panel
+  card, app-card, data-table, flag-toggle, scope-pill, environment-chip, secret-banner,
+  history-panel, dialog, confirm-dialog, menu-button, toast, text-field
 ---
 
 ## Overview
@@ -124,9 +125,11 @@ Les champs de saisie restent à 16px minimum (pas de zoom iOS au focus).
 ## Elevation & Depth
 
 Plat. Une carte est un `canvas` cerné d'un filet de 1px `hairline-soft` (box-shadow
-de contour, comme `home-budget`), sans ombre portée. Le seul recouvrement est la
-bannière de clé fraîchement créée, qui prend une bordure 2px `ink` pour ne pas
-être ratée.
+de contour, comme `home-budget`), sans ombre portée. Les recouvrements sont
+limités à : le panneau du menu (filet `hairline`), la feuille/dialogue modal
+(`canvas` sur un voile noir à 50 %, le seul usage d'une couleur hors tokens, faute
+de token de voile), les toasts (pilule `ink`) et la bannière de clé fraîchement
+créée (bordure 2px `ink`).
 
 ## Shapes
 
@@ -156,6 +159,21 @@ bannière de clé fraîchement créée, qui prend une bordure 2px `ink` pour ne 
 - **`data-table`** : en-tête `label-caps` `mute` sur filet `hairline`, lignes
   séparées par `hairline-soft`, cellules `py-md`, nombres et dates en
   `tabular-nums`.
+- **`app-card`** : carte cliquable (nom `body-md` 600, description ou slug distinct du
+  nom, métadonnées `body-sm` : nombre d'environnements, de flags, dernier
+  changement) suivie d'un menu "⋯" ; aucune action destructive visible.
+- **`dialog`** : `<dialog>` natif modal ; feuille en bas d'écran sous 640px, carte
+  centrée au-delà ; titre `heading-md`, description `body-sm`, bouton de
+  fermeture 44px ; le focus initial va au premier champ (`data-autofocus`).
+- **`confirm-dialog`** : `dialog` pour une action sensible ; bouton `button-danger`
+  (fond `error`), saisie obligatoire de l'identifiant quand `typeToConfirm` est
+  fourni, erreur serveur affichée dans le dialogue.
+- **`menu-button`** : bouton "⋯" 44px ouvrant un panneau de disclosure d'actions
+  (même comportement clavier que `user-menu`).
+- **`toast`** : retour d'action en pilule `ink`, zone `aria-live="polite"` toujours
+  montée, 4 s (8 s pour une erreur, bordure `error`).
+- **`text-field`** : libellé visible `label-caps`, champ, aide `body-sm` liée par
+  `aria-describedby` (ex. clé dérivée du nom, affichée en direct).
 - **`flag-toggle`** : case à cocher native (`role="switch"`), 44x24px, piste
   `mute` éteinte / `ink` allumée, curseur `canvas` / `surface`. Clavier et lecteurs
   d'écran conservés ; `aria-label` "<flag> in <environnement>".
@@ -201,13 +219,16 @@ bannière de clé fraîchement créée, qui prend une bordure 2px `ink` pour ne 
 1. Un nouveau composant s'exprime d'abord avec carte + tableau + pilule + action.
 2. Une nouvelle couleur sémantique exige une variable CSS clair/sombre et une
    entrée dans `tailwind.config.js` ; vérifier le contraste dans les deux thèmes.
-3. Toute nouvelle action destructive passe par `action-danger` et garde la
-   confirmation existante (`window.confirm` / saisie de la clé).
+3. Toute nouvelle action destructive passe par `confirm-dialog` (jamais
+   `window.confirm`), avec saisie de l'identifiant quand l'action est
+   irréversible et large (app, flag actif).
 
 ## Known Gaps
 
-- Les confirmations restent des `window.confirm` / `window.prompt` natifs :
-  une boîte de dialogue maison est hors périmètre de cette passe.
+- Migration en cours des confirmations natives vers `confirm-dialog` : les apps
+  l'utilisent déjà ; flags, environnements, configs et clés d'API suivent dans les
+  PR suivantes de la pile.
+- Pas de token de voile (`scrim`) pour le fond des dialogues.
 - Pas de bascule manuelle clair/sombre : le thème suit le système, comme
   `home-remote-mcps`.
 - `success` n'est pas encore utilisé (aucun état "réussi" persistant à l'écran).
