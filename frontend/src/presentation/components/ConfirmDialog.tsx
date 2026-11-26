@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Dialog } from './Dialog';
 import {
   buttonDanger,
+  buttonPrimary,
   buttonSecondary,
   inputClass,
   labelClass,
@@ -15,6 +16,8 @@ interface ConfirmDialogProps {
   confirmLabel: string;
   /** When set, the confirm button stays disabled until this exact text is typed. */
   typeToConfirm?: string;
+  /** `danger` (default) for destructive actions, `neutral` for a plain confirmation. */
+  tone?: 'danger' | 'neutral';
   /** Rejecting keeps the dialog open and shows the message. */
   onConfirm: () => Promise<void>;
   onClose: () => void;
@@ -37,6 +40,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
 function ConfirmBody({
   confirmLabel,
   typeToConfirm,
+  tone = 'danger',
   onConfirm,
   onClose,
 }: ConfirmDialogProps) {
@@ -94,7 +98,7 @@ function ConfirmBody({
         <button
           type="submit"
           disabled={!ready || busy}
-          className={buttonDanger}
+          className={tone === 'danger' ? buttonDanger : buttonPrimary}
         >
           {confirmLabel}
         </button>

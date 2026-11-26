@@ -59,3 +59,43 @@ export function deletionWarning(
     `Type the key "${flag.key}" to confirm.`
   );
 }
+
+export type FlagFilter = 'all' | 'client' | 'never-evaluated';
+
+/** Search by name or key, then narrow by an attribute. */
+export function filterFlags(
+  flags: FeatureFlagWithValues[],
+  query: string,
+  filter: FlagFilter,
+): FeatureFlagWithValues[] {
+  const needle = query.trim().toLowerCase();
+  return flags.filter((flag) => {
+    if (
+      needle !== '' &&
+      !`${flag.name} ${flag.key}`.toLowerCase().includes(needle)
+    ) {
+      return false;
+    }
+    if (filter === 'client') return flag.clientExposed;
+    if (filter === 'never-evaluated') return flag.lastEvaluatedAt === null;
+    return true;
+  });
+}
+
+/** Overview patch: the flag's value in one environment, as the server would store it. */
+export function withFlagValue(
+  flag: FeatureFlagWithValues,
+  environmentId: string,
+  enabled: boolean,
+  now: string,
+): FeatureFlagWithValues {
+  const exists = flag.values.some((v) => v.environmentId === environmentId);
+  const values = exists
+    ? flag.values.map((v) =>
+        v.environmentId === environmentId
+          ? { ...v, enabled, updatedAt: now }
+          : v,
+      )
+    : [...flag.values, { environmentId, enabled, updatedAt: now }];
+  return { ...flag, values };
+}
