@@ -1,15 +1,13 @@
 import { Route, Routes } from 'react-router-dom';
+import { ApiKeysTab } from './pages/ApiKeysTab';
 import { AppsPage } from './pages/AppsPage';
+import { ConfigsTab } from './pages/ConfigsTab';
+import { EnvironmentsTab } from './pages/EnvironmentsTab';
 import { FlagDetailPage } from './pages/FlagDetailPage';
 import { FlagsTab } from './pages/FlagsTab';
-import { legacyTab } from './pages/LegacyTab';
 import { LoginPage } from './pages/LoginPage';
 import { AppLayout } from './layout/AppLayout';
 import { RequireAuth } from './auth/RequireAuth';
-
-const ConfigsTab = legacyTab('configs');
-const EnvironmentsTab = legacyTab('environments');
-const ApiKeysTab = legacyTab('apiKeys');
 
 export default function App() {
   return (

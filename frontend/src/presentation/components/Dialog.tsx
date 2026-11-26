@@ -8,6 +8,8 @@ interface DialogProps {
   title: string;
   description?: string;
   children: ReactNode;
+  /** false: only the dialog's own buttons close it (no backdrop click, no Escape). */
+  dismissible?: boolean;
 }
 
 /**
@@ -20,6 +22,7 @@ export function Dialog({
   title,
   description,
   children,
+  dismissible = true,
 }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -42,8 +45,11 @@ export function Dialog({
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
       onClose={onClose}
+      onCancel={(event) => {
+        if (!dismissible) event.preventDefault();
+      }}
       onClick={(event) => {
-        if (event.target === ref.current) onClose();
+        if (dismissible && event.target === ref.current) onClose();
       }}
       className="m-0 mt-auto max-h-[92dvh] w-full max-w-full overflow-y-auto rounded-t bg-canvas p-0 text-ink backdrop:bg-black/50 sm:m-auto sm:max-w-md sm:rounded"
     >
@@ -66,14 +72,16 @@ export function Dialog({
                 </p>
               )}
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className={`${iconButton} -mr-sm -mt-sm`}
-            >
-              <CloseIcon />
-            </button>
+            {dismissible && (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                className={`${iconButton} -mr-sm -mt-sm`}
+              >
+                <CloseIcon />
+              </button>
+            )}
           </div>
           {children}
         </div>
