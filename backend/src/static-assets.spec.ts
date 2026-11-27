@@ -25,6 +25,14 @@ class HealthStub {
   }
 }
 
+@Controller('version')
+class VersionStub {
+  @Get()
+  version() {
+    return { version: 'dev' };
+  }
+}
+
 describe('SPA fallback (ServeStatic, Express 5)', () => {
   let root: string;
   let app: NestExpressApplication;
@@ -35,7 +43,7 @@ describe('SPA fallback (ServeStatic, Express 5)', () => {
 
     @Module({
       imports: [ServeStaticModule.forRoot(serveStaticOptions(root))],
-      controllers: [ApiStub, HealthStub],
+      controllers: [ApiStub, HealthStub, VersionStub],
     })
     class TestModule {}
 
@@ -72,6 +80,15 @@ describe('SPA fallback (ServeStatic, Express 5)', () => {
     expect(health.body).toEqual({ status: 'ok' });
 
     const sub = await request(app.getHttpServer()).get('/healthz/unknown');
+    expect(sub.status).toBe(404);
+    expect(sub.text).not.toContain('SPA');
+  });
+
+  it('leaves /version to its controller and 404s its sub-paths instead of the SPA', async () => {
+    const version = await request(app.getHttpServer()).get('/version');
+    expect(version.body).toEqual({ version: 'dev' });
+
+    const sub = await request(app.getHttpServer()).get('/version/unknown');
     expect(sub.status).toBe(404);
     expect(sub.text).not.toContain('SPA');
   });

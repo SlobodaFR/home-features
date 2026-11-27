@@ -73,7 +73,12 @@ describe('GET /healthz', () => {
       .get('/healthz')
       .expect(200);
 
-    expect(response.body).toEqual({ status: 'ok', runtime: null });
+    expect(response.body).toEqual({
+      status: 'ok',
+      version: 'dev',
+      commit: 'dev',
+      runtime: null,
+    });
   });
 
   it('exposes the last runtime sample', async () => {
@@ -83,7 +88,12 @@ describe('GET /healthz', () => {
       .get('/healthz')
       .expect(200);
 
-    expect(response.body).toEqual({ status: 'ok', runtime: sample });
+    expect(response.body).toEqual({
+      status: 'ok',
+      version: 'dev',
+      commit: 'dev',
+      runtime: sample,
+    });
   });
 
   it('is not served under the api prefix', async () => {
@@ -101,5 +111,20 @@ describe('GET /healthz', () => {
     const page = await request(app.getHttpServer()).get('/apps/1');
     expect(page.status).toBe(200);
     expect(page.text).toContain('SPA');
+  });
+
+  it('answers GET /version without a session, never cached, at the root (not the SPA, not under /api)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/version')
+      .expect(200);
+
+    expect(response.headers['content-type']).toMatch(/json/);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.body).toEqual({ version: 'dev', commit: 'dev' });
+    const api = await request(app.getHttpServer()).get('/api/version');
+    expect(api.text).not.toContain('SPA');
+    const sub = await request(app.getHttpServer()).get('/version/anything');
+    expect(sub.status).toBe(404);
+    expect(sub.text).not.toContain('SPA');
   });
 });

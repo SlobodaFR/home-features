@@ -17,6 +17,8 @@ import { routeOf } from './route-of';
 const UNREPORTED_ROUTES = new Set([
   // Probed by the Docker HEALTHCHECK every 30 s.
   '/healthz',
+  // Public release identity (convention harnais release-versioning): no auth, one event per call would be a cost amplifier.
+  '/version',
   // OFREP flag evaluation and the legacy flags-and-configs API: polled by the other home-*
   // services' providers (11 services x polling), never by a person. A cost amplifier with no
   // diagnostic value; the admin/UI routes stay reported.
