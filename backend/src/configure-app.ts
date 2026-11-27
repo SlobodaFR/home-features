@@ -29,7 +29,8 @@ export function configureApp(
     app.set('trust proxy', trustProxyHops);
   }
   // /healthz stays at the root: Docker HEALTHCHECK and Caddy (which blocks it) know that path.
-  app.setGlobalPrefix('api', { exclude: ['healthz'] });
+  // /version (public release identity) too: same root, not blocked by Caddy.
+  app.setGlobalPrefix('api', { exclude: ['healthz', 'version'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   // Before Nest's JSON parser (registered at init): OFREP answers bad bodies in its own format.
   app.use('/api/ofrep', readOfrepBody);

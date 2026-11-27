@@ -25,6 +25,7 @@ import { RuntimeHealthMonitor } from '../../infrastructure/observability/runtime
 import { serveStaticOptions } from '../../static-assets';
 import { FakeTelemetry } from '../../test-support/fake-telemetry';
 import { HealthController } from './controllers/health.controller';
+import { VersionController } from './controllers/version.controller';
 import { GetCurrentUserUseCase } from '../../application/auth/get-current-user.use-case';
 import { MeController } from './controllers/me.controller';
 import { PublicApiController } from './controllers/public-api.controller';
@@ -76,6 +77,7 @@ describe('HTTP telemetry (real routes, stubbed use cases)', () => {
         ItemsController,
         MeController,
         HealthController,
+        VersionController,
         OfrepController,
         PublicApiController,
       ],
@@ -167,6 +169,12 @@ describe('HTTP telemetry (real routes, stubbed use cases)', () => {
 
   it('does not report /healthz (polled by Docker)', async () => {
     await request(app.getHttpServer()).get('/healthz').expect(200);
+
+    expect(telemetry.captured).toEqual([]);
+  });
+
+  it('does not report /version (public release identity, cost amplifier)', async () => {
+    await request(app.getHttpServer()).get('/version').expect(200);
 
     expect(telemetry.captured).toEqual([]);
   });
